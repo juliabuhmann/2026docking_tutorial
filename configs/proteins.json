@@ -1,0 +1,186 @@
+{
+ "_about": "Pocket-hunt levels, ordered from easy to hard. The ligand named here defines the correct pocket. Every entry is fetched from RCSB by scripts/build_data.py. 'receptor_chains' are the chains shown; 'keep_hetero' lists ions kept as part of the protein. 'decoys' are real pockets that are NOT where this ligand binds; they get their own feedback. A decoy is defined either by another ligand in the same entry ('from_ligand') or by residue numbers ('residues') with a source. The structure's own paper is fetched from RCSB ('primary citation'); 'story_refs' only back extra claims in the story text. 'ligand_label' is the short display name; the official CCD name is fetched.",
+ "pocket_residue_cutoff_A": 4.5,
+ "levels": [
+  {
+   "id": "streptavidin",
+   "pdb_id": "1STP",
+   "receptor_chains": [
+    "A"
+   ],
+   "ligand_id": "BTN",
+   "ligand_chain": "A",
+   "title": "Streptavidin + biotin",
+   "difficulty": "easy",
+   "story": "Streptavidin from <i>Streptomyces</i> grabs the vitamin biotin with a dissociation constant around 10<sup>-14</sup> M, one of the tightest non-covalent interactions known. Biologists exploit it everywhere: tag a molecule with biotin and streptavidin will fish it out. Biotin sits deep inside one end of an eight-stranded β-barrel.",
+   "caveat": "Streptavidin is a tetramer; in the full assembly a tryptophan from a neighbouring subunit closes the lid. Only one chain is shown here.",
+   "ligand_label": "biotin"
+  },
+  {
+   "id": "carbonic_anhydrase",
+   "pdb_id": "3HS4",
+   "receptor_chains": [
+    "A"
+   ],
+   "keep_hetero": [
+    "ZN"
+   ],
+   "ligand_id": "AZM",
+   "ligand_chain": "A",
+   "title": "Carbonic anhydrase II + acetazolamide",
+   "difficulty": "easy",
+   "story": "Carbonic anhydrase turns CO<sub>2</sub> and water into bicarbonate a million times a second. Its active site is a cone about 15 Å deep with a zinc ion at the bottom. Acetazolamide, a drug against glaucoma and altitude sickness, plugs the cone: its sulfonamide binds straight to the zinc.",
+   "ligand_label": "acetazolamide"
+  },
+  {
+   "id": "hiv_protease",
+   "pdb_id": "1HSG",
+   "receptor_chains": [
+    "A",
+    "B"
+   ],
+   "ligand_id": "MK1",
+   "ligand_chain": "B",
+   "title": "HIV-1 protease + indinavir (a dimer)",
+   "difficulty": "easy",
+   "story": "HIV protease is built from two identical chains. The active site, with one catalytic Asp25 from each chain, lies exactly at the interface, under two flexible flaps that close over the substrate. Indinavir (Crixivan, 1996) was one of the first drugs designed from a protein structure, and protease inhibitors turned HIV from a death sentence into a chronic disease.",
+   "ligand_label": "indinavir"
+  },
+  {
+   "id": "trypsin",
+   "pdb_id": "3PTB",
+   "receptor_chains": [
+    "A"
+   ],
+   "keep_hetero": [
+    "CA"
+   ],
+   "ligand_id": "BEN",
+   "ligand_chain": "A",
+   "title": "Trypsin + benzamidine",
+   "difficulty": "medium",
+   "story": "Trypsin cuts proteins after lysine and arginine. The reason is a narrow, deep S1 pocket with Asp189 at the bottom that pairs with the positive side chain. Benzamidine is a small mimic of an arginine side chain and blocks exactly that pocket. The protein surface has several grooves; only one is the S1 pocket.",
+   "ligand_label": "benzamidine"
+  },
+  {
+   "id": "abl_imatinib",
+   "pdb_id": "1IEP",
+   "receptor_chains": [
+    "A"
+   ],
+   "ligand_id": "STI",
+   "ligand_chain": "A",
+   "title": "Abl kinase + imatinib",
+   "difficulty": "medium",
+   "story": "Imatinib (Gleevec) blocks the BCR-ABL kinase that drives chronic myeloid leukaemia, and turned it into a manageable disease. Kinases bind ATP in a cleft between two lobes. Imatinib binds there too, but it reaches past the gatekeeper residue into a back pocket that only exists in the inactive \"DFG-out\" shape of the kinase.",
+   "ligand_label": "imatinib"
+  },
+  {
+   "id": "acetylcholinesterase",
+   "pdb_id": "1EVE",
+   "receptor_chains": [
+    "A"
+   ],
+   "ligand_id": "E20",
+   "ligand_chain": "A",
+   "title": "Acetylcholinesterase + donepezil",
+   "difficulty": "medium",
+   "story": "Acetylcholinesterase clears the neurotransmitter acetylcholine from synapses. Its active site sits at the bottom of a gorge about 20 Å deep and only a few Å wide, lined with aromatic rings. Donepezil (Aricept), an Alzheimer's drug, fills the whole gorge, from the catalytic site at the bottom to a second site at the rim.",
+   "ligand_label": "donepezil"
+  },
+  {
+   "id": "estrogen_receptor",
+   "pdb_id": "1ERE",
+   "receptor_chains": [
+    "A"
+   ],
+   "ligand_id": "EST",
+   "ligand_chain": "A",
+   "title": "Estrogen receptor + estradiol",
+   "difficulty": "hard",
+   "story": "The estrogen receptor switches genes on when the hormone estradiol binds. The hormone ends up completely buried in the core of the ligand-binding domain, with helix 12 folding over it like a lid. There is no opening to see from outside: you have to look inside the protein. Drugs such as tamoxifen bind in the same place but stop helix 12 from closing.",
+   "caveat": "Low resolution (3.1 Å).",
+   "ligand_label": "estradiol"
+  },
+  {
+   "id": "t4_lysozyme",
+   "pdb_id": "181L",
+   "receptor_chains": [
+    "A"
+   ],
+   "ligand_id": "BNZ",
+   "ligand_chain": "A",
+   "title": "T4 lysozyme L99A + benzene",
+   "difficulty": "hard",
+   "story": "Brian Matthews' lab replaced leucine 99 of T4 lysozyme with alanine. The missing side chain leaves an empty, completely buried cavity of about 150 Å<sup>3</sup>, and benzene finds its way in. This engineered pocket became a classic test case for docking. The big cleft between the two domains is the real active site that cuts bacterial cell walls, but benzene does not bind there.",
+   "decoys": [
+    {
+     "name": "the enzyme's active-site cleft",
+     "residues": [
+      11,
+      20,
+      26
+     ],
+     "chain": "A",
+     "feedback": "That is the active-site cleft, where the natural substrate (bacterial cell wall) binds, with the catalytic Glu11 and Asp20. A real pocket, but benzene binds somewhere you cannot see from outside.",
+     "source": "Catalytic residues Glu11/Asp20 and Thr26 of T4 lysozyme (Kuroki et al., Science 1993)"
+    }
+   ],
+   "story_refs": "Eriksson et al., Nature 1992",
+   "ligand_label": "benzene"
+  },
+  {
+   "id": "ptp1b",
+   "pdb_id": "1T49",
+   "receptor_chains": [
+    "A"
+   ],
+   "ligand_id": "892",
+   "ligand_chain": "A",
+   "title": "PTP1B + an allosteric inhibitor",
+   "difficulty": "hard",
+   "story": "PTP1B switches off insulin signalling, so blocking it was a long-standing goal for diabetes. Its active site is an obvious deep pocket, but it is so positively charged that molecules binding there are too polar to enter cells. Wiesmann and colleagues found a second, allosteric site about 20 Å away: a compound binding there stops the WPD loop from closing, which shuts the enzyme down.",
+   "decoys": [
+    {
+     "name": "the catalytic site",
+     "residues": [
+      181,
+      215,
+      216,
+      217,
+      218,
+      219,
+      220,
+      221
+     ],
+     "chain": "A",
+     "feedback": "That is the catalytic site, with Cys215 and the phosphate-binding P-loop (residues 215 to 221) and the WPD loop. A great pocket, and the obvious one, but this inhibitor binds elsewhere.",
+     "source": "PTP1B P-loop (His214-Arg221) and WPD loop (Asp181) as described in Wiesmann et al., Nat Struct Mol Biol 2004"
+    }
+   ],
+   "ligand_label": "the allosteric inhibitor"
+  },
+  {
+   "id": "kras",
+   "pdb_id": "6OIM",
+   "receptor_chains": [
+    "A"
+   ],
+   "ligand_id": "MOV",
+   "ligand_chain": "A",
+   "title": "KRAS G12C + sotorasib",
+   "difficulty": "hard",
+   "story": "KRAS is mutated in about a quarter of human cancers, and for nearly 40 years it was called undruggable: its surface looked smooth, and its natural ligand GTP binds so tightly that no drug can compete. Then Shokat's lab found a hidden pocket under the switch-II loop that a molecule can reach when it attaches covalently to the mutant Cys12. Sotorasib (AMG 510) uses it and was approved in 2021.",
+   "decoys": [
+    {
+     "name": "the nucleotide (GDP/GTP) site",
+     "from_ligand": "GDP",
+     "feedback": "That is the nucleotide site, where GDP or GTP binds. A deep, real pocket, but GTP binds with picomolar affinity and is abundant in cells, so drugs cannot compete. The drug pocket is a different one, nearby."
+    }
+   ],
+   "caveat": "Sotorasib is covalently bound to Cys12. The cryptic switch-II pocket is shown here in its drug-bound (open) form.",
+   "story_refs": "Ostrem et al., Nature 2013",
+   "ligand_label": "sotorasib"
+  }
+ ]
+}

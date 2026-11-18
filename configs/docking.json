@@ -1,0 +1,14 @@
+{
+  "_about": "Cases for the hand-docking chapter (ported from the docking_game prototype). Each refers to a pocket-hunt level by id, so the structure is shared. Thresholds are for on-page feedback only.",
+  "polar_contact_cutoff_A": 3.5,
+  "clash_cutoff_A": 2.5,
+  "success_rmsd_A": 2.0,
+  "start_offset_A": 9.0,
+  "cases": [
+    {"level": "trypsin", "difficulty": "easy", "note": "Rigid, 9 heavy atoms. Only position and orientation matter."},
+    {"level": "carbonic_anhydrase", "difficulty": "easy", "note": "Small and almost rigid; the sulfonamide must point at the zinc."},
+    {"level": "streptavidin", "difficulty": "medium", "note": "Biotin's tail must go in first."},
+    {"level": "t4_lysozyme", "difficulty": "medium", "note": "Tiny, but the cavity is buried: you have to place it inside the protein."},
+    {"level": "abl_imatinib", "difficulty": "hard", "note": "37 heavy atoms and a long shape: orientation is everything."}
+  ]
+}

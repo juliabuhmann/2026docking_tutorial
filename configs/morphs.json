@@ -1,0 +1,61 @@
+{
+ "_about": "Apo/holo (or two-conformation) pairs for the morph chapter. Residues are matched by sequence alignment, the start structure is superposed onto the end structure on the CA atoms of the rigid core (iterative trimming), and the page interpolates linearly between the two. The ligand is taken from the end structure. 'ligand_chain' defaults to the protein chain; sugars such as maltose are deposited as their own chain.",
+ "core_trim_A": 2.0,
+ "pairs": [
+  {
+   "id": "adk",
+   "title": "Adenylate kinase closes around its substrates",
+   "start": {
+    "pdb_id": "4AKE",
+    "chain": "A",
+    "label": "apo, open"
+   },
+   "end": {
+    "pdb_id": "1AKE",
+    "chain": "A",
+    "label": "holo, closed",
+    "ligand_ids": [
+     "AP5"
+    ]
+   },
+   "story": "Adenylate kinase moves a phosphate between ATP and AMP. Without substrate its two lids (the LID and NMP-binding domains) are wide open. With the substrate mimic Ap5A bound they clamp shut, and the binding site only becomes an enclosed pocket in the closed form."
+  },
+  {
+   "id": "mbp",
+   "title": "Maltose-binding protein: a Venus flytrap",
+   "start": {
+    "pdb_id": "1OMP",
+    "chain": "A",
+    "label": "apo, open"
+   },
+   "end": {
+    "pdb_id": "1ANF",
+    "chain": "A",
+    "label": "holo, closed",
+    "ligand_ids": [
+     "GLC"
+    ],
+    "ligand_chain": "B"
+   },
+   "story": "Maltose-binding protein has two domains joined by a hinge. Maltose binds in the cleft between them and the domains swing shut around it, like a Venus flytrap. A pocket finder run on the open form sees a wide, shallow groove rather than a pocket."
+  },
+  {
+   "id": "abl_dfg",
+   "title": "Abl kinase: the DFG flip that imatinib needs",
+   "start": {
+    "pdb_id": "2GQG",
+    "chain": "A",
+    "label": "DFG-in (active-like, dasatinib-bound)"
+   },
+   "end": {
+    "pdb_id": "1IEP",
+    "chain": "A",
+    "label": "DFG-out (imatinib-bound)",
+    "ligand_ids": [
+     "STI"
+    ]
+   },
+   "story": "Kinases switch between conformations. In DFG-in, the phenylalanine of the Asp-Phe-Gly motif fills the back of the ATP pocket. In DFG-out it flips out and opens the space where imatinib's tail binds. Imatinib only fits the DFG-out shape, which is why docking it into a DFG-in structure fails. Neither structure is apo: the start state has a different drug (dasatinib) bound, which is not shown."
+  }
+ ]
+}
