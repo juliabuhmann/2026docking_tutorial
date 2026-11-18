@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b1020">
+<title>Pocketworks</title>
+<meta name="description" content="Find the pocket, learn how algorithms find it, dock a ligand, watch a protein open and close, and co-fold a complex in your browser. Real structures from the PDB.">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="menu" class="screen">
+  <div class="menu-inner">
+    <header class="menu-head">
+      <h1>Pocket<span>works</span></h1>
+      <p class="tag">Where does a drug bind, and how would a computer know? Five chapters, every structure a real one from the Protein Data Bank.</p>
+    </header>
+    <div id="chapter-cards"></div>
+    <p class="menu-foot">
+      <button id="btn-unlock" class="ghost">Unlock all levels</button>
+      <button id="btn-reset" class="ghost">Reset progress</button>
+    </p>
+    <p class="fine">Built for the ETH Zürich Bioinformatics Concept Course (Protein Bioinformatics II). Structures come from
+      <a href="https://www.rcsb.org">RCSB PDB</a>; the pocket finders and scores on these pages are simplified teaching versions of
+      the published methods, and the page says so where it matters. Progress is kept in this browser only.</p>
+  </div>
+</div>
+
+<div id="game" class="screen hidden">
+  <header id="top">
+    <button id="btn-home" title="Back to the chapters" aria-label="Back to the chapters">☰</button>
+    <div id="hud-title"><b id="hud-chapter"></b><span id="hud-sub"></span></div>
+    <div id="hud-mid"></div>
+    <div id="hud-right">
+      <button id="btn-recentre" title="Re-centre the view" aria-label="Re-centre the view"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" style="display:block"><circle cx="8" cy="8" r="5"/><circle cx="8" cy="8" r="1.2" fill="currentColor" stroke="none"/><path d="M8 0.8v2.4M8 12.8v2.4M0.8 8h2.4M12.8 8h2.4"/></svg></button>
+      <button id="btn-help" title="How to move the view" aria-label="Help">?</button>
+    </div>
+  </header>
+  <aside id="left" class="panel"></aside>
+  <main id="stage-wrap">
+    <div id="stage"></div>
+    <div id="stage-overlay"></div>
+    <div id="toasts"></div>
+  </main>
+  <aside id="right" class="panel"></aside>
+</div>
+
+<div id="modal" class="hidden" role="dialog" aria-modal="true"><div class="box"></div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/3dmol@2.5.3/build/3Dmol-min.js"></script>
+<script src="js/core.js"></script>
+<script src="js/metrics.js"></script>
+<script src="js/pockets.js"></script>
+<script src="js/compare.js"></script>
+<script src="js/ch_hunt.js"></script>
+<script src="js/ch_algo.js"></script>
+<script src="js/ch_dock.js"></script>
+<script src="js/ch_morph.js"></script>
+<script src="js/ch_cofold.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
