@@ -12,7 +12,7 @@ PW.data('index', 'index', {
    "intro": [
     {
      "title": "The protein",
-     "text": "Streptavidin is a protein from the soil bacterium <i>Streptomyces avidinii</i>. Four identical chains (four colours) form a tetramer, as in the living cell, and each chain binds one biotin."
+     "text": "Streptavidin is a protein from the soil bacterium <i>Streptomyces avidinii</i>. Four identical chains (four colours) form a tetramer, as in solution, and each chain binds one biotin."
     },
     {
      "title": "The ligand",
@@ -61,7 +61,7 @@ PW.data('index', 'index', {
     },
     {
      "title": "Your tip",
-     "text": "Enzymes with fast chemistry often have a wide, funnel-shaped active site. Find the biggest funnel on the surface."
+     "text": "The active site is a deep, cone-shaped funnel with the zinc at the bottom. Find the biggest funnel on the surface."
     }
    ],
    "ligand_id": "AZM",
@@ -172,7 +172,7 @@ PW.data('index', 'index', {
     },
     {
      "title": "The ligand",
-     "text": "Imatinib (Gleevec, 2001) was one of the first targeted cancer drugs. It is a long, flat molecule."
+     "text": "Imatinib (Gleevec, 2001) was one of the first targeted cancer drugs. It is a long, mostly aromatic molecule."
     },
     {
      "title": "Your tip",
@@ -277,7 +277,7 @@ PW.data('index', 'index', {
    "title": "T4 lysozyme L99A + benzene",
    "difficulty": "hard",
    "story": "Brian Matthews' lab replaced leucine 99 of T4 lysozyme with alanine. The missing side chain leaves an empty, completely buried cavity of about 150 \u00c5<sup>3</sup>, and benzene finds its way in. This engineered pocket became a classic test case for docking. The big cleft between the two domains is the real active site that cuts bacterial cell walls, but benzene does not bind there.",
-   "caveat": "",
+   "caveat": "The protein in 181L also carries two cysteine-to-threonine/alanine changes (C54T, C97A) that make it easier to handle; they are far from the cavity.",
    "story_refs": "Eriksson et al., Nature 1992",
    "intro": [
     {
@@ -314,7 +314,7 @@ PW.data('index', 'index', {
    "pdb_id": "1T49",
    "title": "PTP1B + an allosteric inhibitor",
    "difficulty": "hard",
-   "story": "PTP1B switches off insulin signalling, so blocking it was a long-standing goal for diabetes. Its active site is an obvious deep pocket, but it is so positively charged that molecules binding there are too polar to enter cells. Wiesmann and colleagues found a second, allosteric site about 20 \u00c5 away: a compound binding there stops the WPD loop from closing, which shuts the enzyme down.",
+   "story": "PTP1B switches off insulin signalling, so blocking it was a long-standing goal for diabetes. Its active site is an obvious deep pocket, but it is so positively charged that molecules binding there must carry negative charges, and such molecules do not get into cells. Wiesmann and colleagues found a second, allosteric site about 20 \u00c5 away: a compound binding there stops the WPD loop from closing, which shuts the enzyme down.",
    "caveat": "",
    "story_refs": "",
    "intro": [
@@ -353,7 +353,7 @@ PW.data('index', 'index', {
    "title": "KRAS G12C + sotorasib",
    "difficulty": "hard",
    "story": "KRAS is mutated in about a quarter of human cancers, and for nearly 40 years it was called undruggable: its surface looked smooth, and its natural ligand GTP binds so tightly that no drug can compete. Then Shokat's lab found a hidden pocket under the switch-II loop that a molecule can reach when it attaches covalently to the mutant Cys12. Sotorasib (AMG 510) uses it and was approved in 2021.",
-   "caveat": "Sotorasib is covalently bound to Cys12. The cryptic switch-II pocket is shown here in its drug-bound (open) form.",
+   "caveat": "Sotorasib is covalently bound to Cys12. The cryptic switch-II pocket is shown here in its drug-bound (open) form. The construct in 6OIM also has three other cysteines replaced (C51S, C80L, C118S), so that only Cys12 can react.",
    "story_refs": "Ostrem et al., Nature 2013",
    "intro": [
     {
@@ -362,7 +362,7 @@ PW.data('index', 'index', {
     },
     {
      "title": "The ligand",
-     "text": "Sotorasib (Lumakras, 2021) was the first approved KRAS drug. It forms a covalent bond with the mutant cysteine 12."
+     "text": "Sotorasib (Lumakras, 2021) was the first approved KRAS drug. It forms a covalent bond with the mutant cysteine 12 and traps KRAS in its GDP-bound, off state."
     },
     {
      "title": "Your tip",

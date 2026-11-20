@@ -20,7 +20,7 @@
    "intro": [
     {
      "title": "The protein",
-     "text": "Streptavidin is a protein from the soil bacterium <i>Streptomyces avidinii</i>. Four identical chains (four colours) form a tetramer, as in the living cell, and each chain binds one biotin."
+     "text": "Streptavidin is a protein from the soil bacterium <i>Streptomyces avidinii</i>. Four identical chains (four colours) form a tetramer, as in solution, and each chain binds one biotin."
     },
     {
      "title": "The ligand",
@@ -59,7 +59,7 @@
     },
     {
      "title": "Your tip",
-     "text": "Enzymes with fast chemistry often have a wide, funnel-shaped active site. Find the biggest funnel on the surface."
+     "text": "The active site is a deep, cone-shaped funnel with the zinc at the bottom. Find the biggest funnel on the surface."
     }
    ]
   },
@@ -140,7 +140,7 @@
     },
     {
      "title": "The ligand",
-     "text": "Imatinib (Gleevec, 2001) was one of the first targeted cancer drugs. It is a long, flat molecule."
+     "text": "Imatinib (Gleevec, 2001) was one of the first targeted cancer drugs. It is a long, mostly aromatic molecule."
     },
     {
      "title": "Your tip",
@@ -242,7 +242,8 @@
      "title": "Your tip",
      "text": "Removing a big side chain from the core leaves an empty space behind. The obvious cleft may not be the answer; slice into the protein."
     }
-   ]
+   ],
+   "caveat": "The protein in 181L also carries two cysteine-to-threonine/alanine changes (C54T, C97A) that make it easier to handle; they are far from the cavity."
   },
   {
    "id": "ptp1b",
@@ -254,7 +255,7 @@
    "ligand_chain": "A",
    "title": "PTP1B + an allosteric inhibitor",
    "difficulty": "hard",
-   "story": "PTP1B switches off insulin signalling, so blocking it was a long-standing goal for diabetes. Its active site is an obvious deep pocket, but it is so positively charged that molecules binding there are too polar to enter cells. Wiesmann and colleagues found a second, allosteric site about 20 Å away: a compound binding there stops the WPD loop from closing, which shuts the enzyme down.",
+   "story": "PTP1B switches off insulin signalling, so blocking it was a long-standing goal for diabetes. Its active site is an obvious deep pocket, but it is so positively charged that molecules binding there must carry negative charges, and such molecules do not get into cells. Wiesmann and colleagues found a second, allosteric site about 20 Å away: a compound binding there stops the WPD loop from closing, which shuts the enzyme down.",
    "decoys": [
     {
      "name": "the catalytic site",
@@ -307,7 +308,7 @@
      "feedback": "That is the nucleotide site, where GDP or GTP binds. A deep, real pocket, but GTP binds with picomolar affinity and is abundant in cells, so drugs cannot compete. The drug pocket is a different one, nearby."
     }
    ],
-   "caveat": "Sotorasib is covalently bound to Cys12. The cryptic switch-II pocket is shown here in its drug-bound (open) form.",
+   "caveat": "Sotorasib is covalently bound to Cys12. The cryptic switch-II pocket is shown here in its drug-bound (open) form. The construct in 6OIM also has three other cysteines replaced (C51S, C80L, C118S), so that only Cys12 can react.",
    "story_refs": "Ostrem et al., Nature 2013",
    "ligand_label": "sotorasib",
    "intro": [
@@ -317,7 +318,7 @@
     },
     {
      "title": "The ligand",
-     "text": "Sotorasib (Lumakras, 2021) was the first approved KRAS drug. It forms a covalent bond with the mutant cysteine 12."
+     "text": "Sotorasib (Lumakras, 2021) was the first approved KRAS drug. It forms a covalent bond with the mutant cysteine 12 and traps KRAS in its GDP-bound, off state."
     },
     {
      "title": "Your tip",
