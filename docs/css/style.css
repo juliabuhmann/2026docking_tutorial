@@ -175,6 +175,7 @@ ol.steps { padding-left: 20px; margin: 6px 0 } ol.steps li { margin: 4px 0 }
   #game { grid-template-columns: 270px minmax(0, 1fr) 300px }
 }
 @media (max-width: 900px) {
+  #stage-overlay .legend-card { font-size: 11px; max-width: 62%; padding: 5px 8px }
   body { overflow: auto }
   #game { position: static; display: flex; flex-direction: column; height: auto }
   #top { position: sticky; top: 0; height: 56px; flex: none }

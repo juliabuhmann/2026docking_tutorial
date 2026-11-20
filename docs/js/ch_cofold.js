@@ -76,7 +76,7 @@
     if (S.ghostModel) { S.viewer.removeModel(S.ghostModel); S.ghostModel = null; }
     if (S.showGhost) { // the oracle's answer, in the display frame: the crystal structure
       S.ghostModel = S.viewer.addModel(chainPdb(), "pdb");
-      S.ghostModel.setStyle({}, { cartoon: { style: "trace", color: "#ffffff", opacity: 0.35, thickness: 0.25 } });
+      S.ghostModel.setStyle({}, { cartoon: { style: "trace", color: "#22d3ee", opacity: 0.7, thickness: 0.5 } });
     }
   }
 
@@ -90,7 +90,7 @@
     S.viewer.render();
     const q = (id) => document.getElementById(id);
     if (S.slider) S.slider.set(step);
-    const fmt = (x) => (x >= 100 ? x.toFixed(0) : x >= 1 ? x.toFixed(1) : x >= 0.01 ? x.toFixed(3) : x.toExponential(1));
+    const fmt = (x) => (x >= 100 ? x.toFixed(0) : x >= 2 ? x.toFixed(1) : x >= 0.01 ? x.toFixed(3) : x.toExponential(1));
     if (q("cf-r-step")) {
       q("cf-r-step").textContent = `${step} / ${Diffusion.AF3.STEPS}`;
       q("cf-r-sigma").textContent = `${fmt(f.sigma)} Å`;
@@ -102,6 +102,7 @@
       const [px, py] = plotXY(step, f.sigma);
       q("cf-plot-dot").setAttribute("cx", px); q("cf-plot-dot").setAttribute("cy", py);
     }
+    if (q("cf-bar-step")) q("cf-bar-step").textContent = `${step}/${Diffusion.AF3.STEPS}`;
     if (q("cf-ov-step")) q("cf-ov-step").innerHTML = `step <b>${step}</b> / ${Diffusion.AF3.STEPS} · σ = <b>${fmt(f.sigma)} Å</b>`;
     drawScaleBar();
   }
@@ -136,7 +137,7 @@
     const L = Diffusion.noiseLevels(), A = Diffusion.AF3;
     const path = L.map((s, i) => `${i ? "L" : "M"}${plotXY(i, s).join(" ")}`).join("");
     const gStep = L.findIndex((s) => s <= A.GAMMA_MIN), [gx] = plotXY(gStep, L[gStep]);
-    const ticks = [1000, 10, 0.1, 0.01].filter((t) => t <= L[0] && t >= L[L.length - 1])
+    const ticks = [1000, 10, 0.1].filter((t) => t <= L[0] && t >= L[L.length - 1])
       .map((t) => { const [, y] = plotXY(0, t); return `<text x="${PLOT.l - 4}" y="${+y + 3}" text-anchor="end">${t >= 1 ? t : t}</text><path d="M${PLOT.l} ${y}H${PLOT.w - PLOT.r}" stroke="#24304a"/>`; }).join("");
     return `<svg viewBox="0 0 ${PLOT.w} ${PLOT.h}" width="100%" font-size="9" fill="#9aa7bf" font-family="ui-monospace,monospace">
       ${ticks}<path d="M${gx} ${PLOT.t}V${PLOT.h - PLOT.b}" stroke="#ffb454" stroke-dasharray="3 3"/>
@@ -154,6 +155,11 @@
       replaced by the answer: the crystal structure. <a href="#" id="cf-truth">What else differs?</a>
       <div id="cf-ov-step" style="margin-top:4px"></div></div>`));
     $("#stage-overlay").appendChild(el(`<div class="legend-card" id="cf-scale" style="align-self:flex-end"><i style="display:block;height:3px;background:var(--acc);border-radius:2px;width:60px"></i><span></span></div>`));
+    // play control inside the viewer, for small screens where the panel is far below
+    const bar = $("#stage-hint");
+    bar.innerHTML = `<button id="cf-play2" class="primary" style="pointer-events:auto;padding:3px 10px">▶</button> <span id="cf-bar-step"></span>`;
+    bar.classList.remove("hidden");
+    $("#cf-play2").addEventListener("click", playSampler);
     $("#cf-truth").addEventListener("click", (e) => { e.preventDefault(); const d = $("#cf-truth-box"); if (d) { d.open = true; d.scrollIntoView({ block: "nearest" }); } });
   }
 
@@ -172,17 +178,19 @@
     };
     requestAnimationFrame(tick);
   }
-  function updatePlayButton() { const b = document.getElementById("cf-play"); if (b) b.textContent = S.illuPlaying ? "❚❚ Pause" : "▶ Play"; }
+  function updatePlayButton() {
+    ["cf-play", "cf-play2"].forEach((id) => { const b = document.getElementById(id); if (b) b.textContent = S.illuPlaying ? "❚❚" + (id === "cf-play" ? " Pause" : "") : "▶" + (id === "cf-play" ? " Play" : ""); });
+  }
 
   function samplerPanel() {
     const A = Diffusion.AF3, wrap = $("#cf-sampler");
     wrap.innerHTML = `<div class="row"><button class="primary" id="cf-play">▶ Play</button><button id="cf-seed" class="ghost" title="Start again from different random noise">↻ New noise</button></div>
       <div id="cf-step-slider"></div>
+      <div id="cf-view"></div><div id="cf-ghost"></div>
       <div class="readout"><span>Step</span><b id="cf-r-step"></b><span>Noise level σ</span><b id="cf-r-sigma"></b>
         <span>Extra noise γ</span><b id="cf-r-gamma"></b><span>Raised level t̂ = σ<sub>prev</sub>(1+γ)</span><b id="cf-r-that"></b>
         <span>Cloud size (2 × RMS radius)</span><b id="cf-r-size"></b></div>
       <div style="margin-top:6px">${schedulePlot()}</div>
-      <h3>View</h3><div id="cf-view"></div><div id="cf-ghost"></div>
       <details class="small" style="margin-top:8px"><summary><b>The algorithm</b> (sample() in AlphaFold 3's code)</summary>
 <pre class="algo">x ← σ₀ · ε                    σ₀ = ${(A.SIGMA_DATA * A.S_MAX).toFixed(0)} Å, ε ~ N(0, I)
 for τ = 1 … ${A.STEPS}:
@@ -195,7 +203,7 @@ for τ = 1 … ${A.STEPS}:
         <p>σ falls from ${(A.SIGMA_DATA * A.S_MAX).toFixed(0)} Å to ${(A.SIGMA_DATA * A.S_MIN).toFixed(4)} Å: σ<sub>data</sub> = ${A.SIGMA_DATA} Å times (${A.S_MAX}<sup>1/${A.P}</sup> + t(${A.S_MIN}<sup>1/${A.P}</sup> − ${A.S_MAX}<sup>1/${A.P}</sup>))<sup>${A.P}</sup>, so most steps are spent at small noise, where the details are decided.
         The last line moves from the noisy atoms towards the guess, ${A.STEP_SCALE} times as far as a plain Euler step would.</p></details>
       <details class="small" id="cf-truth-box"><summary><b>What is AlphaFold 3 here, and what is not</b></summary>
-        <p><b>As in AlphaFold 3</b> (google-deepmind/alphafold3, diffusion_head.py): the noise schedule, ${A.STEPS} steps, γ<sub>0</sub> = ${A.GAMMA_0} above ${A.GAMMA_MIN} Å, noise scale ${A.NOISE_SCALE}, step scale ${A.STEP_SCALE}, the random rotation and 1 Å shift at every step, and the start from pure noise centred on the origin.</p>
+        <p><b>As in AlphaFold 3</b> (google-deepmind/alphafold3, diffusion_head.py): the noise schedule, ${A.STEPS} steps, γ<sub>0</sub> = ${A.GAMMA_0} above ${A.GAMMA_MIN} Å, noise scale ${A.NOISE_SCALE}, step scale ${A.STEP_SCALE}, the random rotation and random N(0, 1 Å) shift at every step, and the start from pure noise centred on the origin.</p>
         <p><b>Different:</b></p><ul>
           <li>The <b>guess x̂</b> is the crystal structure superposed onto the noisy atoms. AlphaFold 3's network has to predict it from the sequence, MSA and templates (via the trunk), and early guesses are blurry. This is why the result here is always right.</li>
           <li><b>One sample</b>. AlphaFold 3 runs ${A.NUM_SAMPLES} per seed and ranks them by confidence.</li>
@@ -229,7 +237,7 @@ for τ = 1 … ${A.STEPS}:
       { kicker: k(3), title: "The diffusion module: noise to atoms",
         html: `Coordinates are made by denoising. Every atom starts at a random position: noise of σ = ${(A.SIGMA_DATA * A.S_MAX).toFixed(0)} Å around the origin, a cloud thousands of Å wide. In ${A.STEPS} steps the network guesses the clean structure from the noisy one, guided by the trunk, and the sampler moves part of the way towards the guess.<div class="facts">AlphaFold 2 worked differently: its structure module starts every residue at the origin (a "black hole") and moves them out.</div>` },
       { kicker: k(4), title: "Several answers, ranked",
-        html: `Different noise gives different structures. AlphaFold 3 draws ${A.NUM_SAMPLES} samples per seed and ranks them by its own confidence (pLDDT, PAE, ipTM). <b>Confident is not the same as correct</b>, especially for ligands and pockets unlike those it saw in training.` },
+        html: `Different noise gives different structures. AlphaFold 3 draws ${A.NUM_SAMPLES} samples per seed and ranks them by a confidence score (mainly ipTM and pTM, with a penalty for clashes); it also reports per-atom confidence (pLDDT) and expected errors (PAE). <b>Confident is not the same as correct</b>, especially for ligands and pockets unlike those it saw in training.` },
       { kicker: k(5), title: "In this chapter",
         html: `<b>1</b> Watch AlphaFold 3's sampler step by step (left; one part is replaced, and the page says which). <b>2</b> Fold the complex for real in your browser with LocalFold (right). <b>3</b> Upload the prediction and score its ligand pose against the crystal.` },
     ], { done: "Let's go" });
@@ -243,7 +251,7 @@ for τ = 1 … ${A.STEPS}:
       await PW.loadScript(FFLATE_URL);
       const files = window.fflate.unzipSync(new Uint8Array(await file.arrayBuffer()));
       const names = Object.keys(files).filter((n) => /\.(pdb|cif)$/i.test(n) && !/template/i.test(n));
-      const pick = names.find((n) => /model_0\.cif$/i.test(n)) || names.find((n) => /\.pdb$/i.test(n)) || names[0];
+      const pick = names.find((n) => /model_0\.(cif|pdb)$/i.test(n)) || names.find((n) => /\.pdb$/i.test(n)) || names[0];
       if (!pick) throw new Error("no .pdb or .cif structure inside the zip");
       return { text: new TextDecoder().decode(files[pick]), name: `${file.name} › ${pick}` };
     }
@@ -283,7 +291,7 @@ for τ = 1 … ${A.STEPS}:
     S.illuPlaying = false;
     const v = PW.resetView();
     S.viewer = v;
-    const rec = v.addModel(S.prot.receptor_pdb, "pdb");
+    const rec = v.addModel(chainPdb(), "pdb"); // the folded chain only (streptavidin's data hold the tetramer)
     rec.setStyle({}, { cartoon: { color: "#9aa3b2", opacity: 0.7 } });
     const lig = v.addModel(S.prot.ligand.molblock, "sdf");
     lig.setStyle({}, { stick: { radius: 0.25, colorscheme: "greenCarbon" } });
@@ -335,8 +343,8 @@ for τ = 1 … ${A.STEPS}:
       <p class="small"><a href="${LOCALFOLD_URL}" target="_blank" rel="noopener">LocalFold</a> runs AlphaFold 3 and other co-folding models <b>inside your browser</b> (it needs WebGPU: a recent Chrome, Edge or Safari) and lets you watch the structure being built.</p>
       <ol class="steps small">
         <li><a href="${c.job_file}" download="${esc(c.id)}_job.json">Download the job file</a> for ${esc(L.ligand_label)} + ${esc(L.title.split(" + ")[0])}.</li>
-        <li>Open <a href="${LOCALFOLD_URL}" target="_blank" rel="noopener">localfold.org</a>. Under alignments choose <b>Load job JSON…</b> and pick the file.</li>
-        <li>Keep a model that can place ligands (the default AF3, or e.g. Boltz-2 or Protenix-v2; AlphaFold 2 and ESMFold cannot). Press <b>Fold</b>.</li>
+        <li>Open <a href="${LOCALFOLD_URL}" target="_blank" rel="noopener">localfold.org</a>. In the <b>MSA</b> menu choose <b>Load job JSON…</b> and pick the file.</li>
+        <li>Keep a model that can place ligands (the default AF3, or e.g. Boltz-2 or Protenix-v2; AlphaFold 2 and ESMFold cannot). Accept the AlphaFold 3 weights terms if asked, and press <b>Fold</b>.</li>
         <li>Watch the trajectory, then <b>Download All</b>.</li>
         <li>Drop the zip (or the structure file inside it) below.</li></ol>
       <p class="small muted">Or type it in yourself:</p>
@@ -347,7 +355,7 @@ for τ = 1 … ${A.STEPS}:
       <p class="small muted">Use the CCD code rather than the SMILES: then the predicted ligand keeps the crystal's atom names and can be scored below.</p>
       <h3>3 · Check your prediction</h3>
       <label class="drop" id="cf-drop"><input type="file" id="cf-file" accept=".zip,.pdb,.cif" hidden>
-        Drop LocalFold's zip, or a <code>.pdb</code> / <code>.cif</code> from AlphaFold Server, here<br><span class="small">or click to choose a file</span></label>
+        Drop LocalFold's zip, or a <code>.pdb</code> / <code>.cif</code> from another co-folding run, here<br><span class="small">or click to choose a file</span></label>
       <div id="cf-result"></div>
       <p class="small muted" style="margin-top:10px">Crystal structure: ${citation(L.citation)}. ${esc(c.note)}</p>`;
     const copies = { seq: c.sequence, ccd: c.ligand_id, smi: c.ligand_smiles };
@@ -397,7 +405,7 @@ for τ = 1 … ${A.STEPS}:
     leave() { if (S) S.illuPlaying = false; S = null; },
     recentre() {
       if (!S) return;
-      if (S.view === "illu") S.viewer.zoomTo(); else S.viewer.zoomTo();
+      S.viewer.zoomTo();
       S.viewer.render();
     },
   });

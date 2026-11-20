@@ -24,7 +24,8 @@ check(worst < 1e-9, `200 random rotations are orthonormal with det +1 (max error
 for (const t of load("index.js").cofold) {
   const prot = load(`prot_${t.id}.js`);
   const xyz = [];
-  for (const l of prot.receptor_pdb.split("\n")) if (l.startsWith("ATOM")) xyz.push(+l.slice(30, 38), +l.slice(38, 46), +l.slice(46, 54));
+  const chain = load(`cofold_${t.id}.js`).chain; // one chain is folded, as on the page
+  for (const l of prot.receptor_pdb.split("\n")) if (l.startsWith("ATOM") && l[21] === chain) xyz.push(+l.slice(30, 38), +l.slice(38, 46), +l.slice(46, 54));
   prot.ligand.atoms.forEach((a) => xyz.push(...a.xyz));
   const ref = Float64Array.from(xyz), t0 = Date.now();
   const run = D.sample(ref, C, { seed: 1 });

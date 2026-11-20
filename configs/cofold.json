@@ -1,5 +1,5 @@
 {
-  "_about": "Co-folding targets. The protein sequence is the full deposited sequence of the entity (SEQRES), fetched from RCSB; the ligand is given as its CCD code. build_data.py writes an AlphaFold Server style job JSON for each, which LocalFold (localfold.org) and AlphaFold Server can read.",
+  "_about": "Co-folding targets. The protein sequence is the full deposited sequence of the entity (SEQRES), fetched from RCSB; the ligand is given as its CCD code. build_data.py writes an AlphaFold Server style job JSON for each, which LocalFold (localfold.org) reads. AlphaFold Server uses the same format but only allows a short list of ligands, which does not include these.",
   "targets": [
     {"id": "streptavidin", "pdb_id": "1STP", "chain": "A", "ligand_id": "BTN", "note": "Smallest and fastest to fold. In nature a tetramer; one chain is folded here, so the lid that a neighbouring chain puts over biotin (Trp120) is missing."},
     {"id": "trypsin", "pdb_id": "3PTB", "chain": "A", "ligand_id": "BEN", "note": "Small ligand in a well-defined pocket."},
