@@ -74,7 +74,10 @@
         [{ label: "Cancel", value: false }, { label: "Reset", primary: true, value: true }]);
       if (ok) { PW.resetProgress(); render(); }
     });
+    $("#btn-menu-tour").addEventListener("click", () => PW.menuTour(true));
     PW.boot();
     render();
+    // first visit: show the tour once the cards are there (only if the menu is what is open)
+    PW.get("index", "index").then(() => setTimeout(() => { if (!PW.current) PW.menuTour(false); }, 60));
   });
 })();
