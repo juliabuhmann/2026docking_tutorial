@@ -418,15 +418,31 @@ def build_morph(pair: dict, trim: float) -> dict:
     print(f"    core {len(core)}/{len(ca_idx)} CA within {trim} A; overall CA RMSD "
           f"{np.sqrt((ca_dev ** 2).mean()):.2f} A, max CA shift {ca_dev.max():.1f} A")
 
+    # The ligand of the end structure. Where parts of it are modelled in alternative positions
+    # (1AKE's Ap5A: A and B at half occupancy), keep the position with the fewest clashes with the
+    # end structure's protein, so the end frame does not "clash" with its own ligand.
+    clash_a = json.loads((CONFIGS / "docking.json").read_text())["clash_cutoff_A"]
+    prot_xyz = np.array([a["xyz"] for a in e_atoms if a["record"] == "ATOM"])
+    all_e = [parse_atom_line(l) for l in e_text.splitlines() if l.startswith(("ATOM", "HETATM"))]
     lig = []
     for code in pair["end"].get("ligand_ids", []):
         lig_chain = pair["end"].get("ligand_chain", pair["end"]["chain"])
-        lig += [a for a in e_atoms if a["resn"] == code and a["chain"] == lig_chain]
+        cand = [a for a in all_e if a["resn"] == code and a["chain"] == lig_chain and a["elem"] not in ("H", "D")]
+        alts = sorted({a["altloc"] for a in cand} - {""}) or [""]
+        def pick(alt):
+            return [a for a in cand if a["altloc"] in ("", alt)]
+        def n_clash(atoms):
+            d = np.linalg.norm(np.array([a["xyz"] for a in atoms])[:, None] - prot_xyz[None], axis=2)
+            return int((d < clash_a).sum())
+        best = min(alts, key=lambda alt: n_clash(pick(alt)))
+        if len(alts) > 1:
+            print(f"    {code}: alternative positions {alts}, clashes {[n_clash(pick(x)) for x in alts]}; keeping {best}")
+        lig += pick(best)
     if pair["end"].get("ligand_ids") and not lig:
         raise SystemExit(f"ligand {pair['end']['ligand_ids']} not found in {pair['end']['pdb_id']}")
     print(f"    ligand: {len(lig)} heavy atoms")
     return {
-        "id": pair["id"], "title": pair["title"], "story": pair["story"],
+        "id": pair["id"], "title": pair["title"], "story": pair["story"], "highlight": pair.get("highlight", []),
         "start": pair["start"] | primary_citation(pair["start"]["pdb_id"]),
         "end": pair["end"] | primary_citation(pair["end"]["pdb_id"]),
         "identity_pct": round(aln.calculate_identity(), 1),

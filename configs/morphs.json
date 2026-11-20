@@ -1,5 +1,5 @@
 {
- "_about": "Apo/holo (or two-conformation) pairs for the morph chapter. Residues are matched by sequence alignment, the start structure is superposed onto the end structure on the CA atoms of the rigid core (iterative trimming), and the page interpolates linearly between the two. The ligand is taken from the end structure. 'ligand_chain' defaults to the protein chain; sugars such as maltose are deposited as their own chain.",
+ "_about": "Apo/holo (or two-conformation) pairs for the morph chapter. Residues are matched by sequence alignment, the start structure is superposed onto the end structure on the CA atoms of the rigid core (iterative trimming), and the page interpolates linearly between the two. The ligand is taken from the end structure. 'ligand_chain' defaults to the protein chain; sugars such as maltose are deposited as their own chain. 'highlight' lists residues (end-structure numbering) drawn as labelled sticks.",
  "core_trim_A": 2.0,
  "pairs": [
   {
@@ -55,7 +55,23 @@
      "STI"
     ]
    },
-   "story": "Kinases switch between conformations. In DFG-in, the phenylalanine of the Asp-Phe-Gly motif fills the back of the ATP pocket. In DFG-out it flips out and opens the space where imatinib's tail binds. Imatinib only fits the DFG-out shape, which is why docking it into a DFG-in structure fails. Neither structure is apo: the start state has a different drug (dasatinib) bound, which is not shown. The start structure is also phosphorylated on Tyr393, in the activation loop that moves most here: phosphorylation of this tyrosine is the classic switch that activates Abl, while imatinib prefers the unphosphorylated, inactive kinase. The phosphate itself is not drawn, because the morph only moves atoms present in both structures."
+   "story": "Kinases switch between conformations. In DFG-in, the phenylalanine of the Asp-Phe-Gly motif (Phe382) packs into a hydrophobic pocket behind the ATP site. In DFG-out it flips out of there and opens the space where imatinib's long tail binds. The ATP cleft itself exists in both states, so the pocket finder sees a pocket at the start too: what DFG-out adds is the back pocket. In Abl, imatinib needs the DFG-out shape, so docking it into a DFG-in structure is expected to fail; watch the clash counter. Neither structure is apo: the start state has a different drug (dasatinib) bound, which is not shown. The start structure is also phosphorylated on Tyr393, in the activation loop that moves most here: phosphorylation of this tyrosine is the classic switch that activates Abl, while imatinib prefers the unphosphorylated, inactive kinase. The phosphate itself is not drawn, because the morph only moves atoms present in both structures. The two structures are human (2GQG) and mouse (1IEP) Abl, 99.6% identical over this domain.",
+   "highlight": [
+    {
+     "resi": [
+      381,
+      382,
+      383
+     ],
+     "label": "DFG"
+    },
+    {
+     "resi": [
+      393
+     ],
+     "label": "Tyr393"
+    }
+   ]
   }
  ]
 }
