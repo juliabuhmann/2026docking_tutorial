@@ -126,6 +126,13 @@ tour and intro cards at 390 px width with touch taps, without page errors. Not c
 surface view performs on student laptops (it is slow in software WebGL), and whether the intro
 texts are pitched right.
 
+A second round of review, one independent reviewer per chapter (facts and usability, driving the
+page in headless Chromium at 1400, 1280 and 390 px), found and led to fixes of, among others: a
+crash in docking case 4, stars that ignored aids switched off before Submit, buried pockets that
+could be solved from outside, a grid score that never changed a ranking, and AlphaFold Server
+offered as a route although it cannot take these ligands. The review did not cover real touch
+hardware, Safari/Firefox, real GPUs, or a real LocalFold fold.
+
 ## Known simplifications
 
 - The pocket finders are simplified (see `docs/js/pockets.js`); "found" means DCC ≤ 4 Å, which
