@@ -6,10 +6,7 @@
   const { $, $$, esc, el, stars, citation, toast, segmented, checkbox } = PW;
   const M = window.Metrics;
 
-  // UI feel only, no scientific meaning.
-  const KEY_STEP_A = 0.25, KEY_STEP_FINE_A = 0.05, KEY_ROT_DEG = 5, KEY_ROT_FINE_DEG = 1;
-  const DRAG_ROT_RAD_PER_PX = 0.01, WHEEL_MOVE_A_PER_UNIT = 0.01, WHEEL_ROT_RAD_PER_UNIT = 0.003;
-  const GAUGE_MAX_A = 10;
+  const GAUGE_MAX_A = 10; // RMSD at which the gauge is full (feel only)
 
   const MODES = {
     easy: { show: { ghost: true, contacts: false, pocket: true, surface: false, live: true }, stars: 1,
@@ -28,28 +25,6 @@
     xyz.forEach((p, i) => { lines[4 + i] = p.map((v) => v.toFixed(4).padStart(10)).join("") + lines[4 + i].slice(30); });
     return lines.join("\n");
   }
-  function screenBasis() {
-    const c = M.add(S.refCentroid, S.pose.t), v = S.viewer;
-    const toP = (p) => ({ x: p[0], y: p[1], z: p[2] });
-    const s0 = v.modelToScreen(toP(c));
-    const cols = [[1, 0, 0], [0, 1, 0], [0, 0, 1]].map((e) => v.modelToScreen(toP(M.add(c, e))));
-    const Jx = cols.map((s) => s.x - s0.x), Jy = cols.map((s) => s.y - s0.y);
-    const a = M.dot(Jx, Jx), b = M.dot(Jx, Jy), d = M.dot(Jy, Jy), det = a * d - b * b;
-    const pinv = (sx, sy) => M.add(M.scale(Jx, (d * sx - b * sy) / det), M.scale(Jy, (-b * sx + a * sy) / det));
-    const right = pinv(1, 0), down = pinv(0, 1), up = M.scale(down, -1);
-    return { right, down, up, toward: M.normalize(M.cross(right, up)) };
-  }
-  const translateScreen = (dx, dy) => { const B = screenBasis(); S.pose.t = M.add(S.pose.t, M.add(M.scale(B.right, dx), M.scale(B.down, dy))); };
-  const translateDepth = (a) => { S.pose.t = M.add(S.pose.t, M.scale(screenBasis().toward, a)); };
-  function rotate(axis, angle) {
-    if (M.norm(axis) === 0 || angle === 0) return;
-    S.pose.R = M.orthonormalize(M.matMul(M.axisAngle(axis, angle), S.pose.R));
-  }
-  function rotateScreen(dx, dy) {
-    const B = screenBasis();
-    rotate(M.add(M.scale(M.normalize(B.up), dx), M.scale(M.normalize(B.right), dy)), Math.hypot(dx, dy) * DRAG_ROT_RAD_PER_PX);
-  }
-
   // ------------------------------------------------------------------ drawing
   function applyStaticStyles() {
     const v = S.viewer, show = S.show, rec = S.recModel;
@@ -81,6 +56,8 @@
     S.ligModel = v.addModel(molblockAt(xyz), "sdf");
     S.ligModel.setStyle({}, { stick: { radius: 0.24, colorscheme: "magentaCarbon" } });
     v.removeAllShapes();
+    const piv = S.controls && S.controls.pivot; // the atom the ligand is being turned around
+    if (piv) v.addSphere({ center: { x: piv[0], y: piv[1], z: piv[2] }, radius: 0.45, color: "#22d3ee", opacity: 0.9 });
     if (S.show.contacts) {
       S.prot.ligand.contacts.forEach((c) => {
         const p = xyz[c.lig_index], ok = M.dist(p, c.partner_xyz) <= S.cfg.polar_contact_cutoff_A;
@@ -124,7 +101,7 @@
   }
 
   function refresh() {
-    const xyz = M.applyPose(S.refXyz, S.pose, S.refCentroid);
+    const xyz = S.curXyz = M.applyPose(S.refXyz, S.pose, S.refCentroid);
     drawLigand(xyz);
     updateReadouts(xyz);
     S.viewer.render();
@@ -145,74 +122,15 @@
     S.viewer.render();
   }
 
-  // ------------------------------------------------------------------ input
+  // ------------------------------------------------------------------ input (js/controls.js)
   function bindInput() {
-    const stage = $("#stage");
-    let drag = null;
-    const actionFor = (ev) => (S.tool === "move" || ev.shiftKey ? "move" : S.tool === "rotate" || ev.altKey ? "rotate" : null);
-    const pt = (ev) => (ev.touches ? ev.touches[0] : ev);
-    const h = S.handlers = {
-      down(ev) {
-        if (ev.touches && ev.touches.length > 1) return;
-        const a = actionFor(ev);
-        if (!a) return;
-        ev.stopPropagation(); ev.preventDefault();
-        drag = { a, x: pt(ev).clientX, y: pt(ev).clientY };
-      },
-      move(ev) {
-        if (!drag) return;
-        ev.stopPropagation(); ev.preventDefault();
-        const p = pt(ev), dx = p.clientX - drag.x, dy = p.clientY - drag.y;
-        drag.x = p.clientX; drag.y = p.clientY;
-        if (drag.a === "move") translateScreen(dx, dy); else rotateScreen(dx, dy);
-        refresh();
-      },
-      up() { drag = null; },
-      wheel(ev) {
-        const a = actionFor(ev);
-        if (!a) return;
-        ev.stopPropagation(); ev.preventDefault();
-        const delta = ev.deltaY || ev.deltaX;
-        if (a === "move") translateDepth(-delta * WHEEL_MOVE_A_PER_UNIT); else rotate(screenBasis().toward, delta * WHEEL_ROT_RAD_PER_UNIT);
-        refresh();
-      },
-      key(ev) {
-        if (ev.target.closest && ev.target.closest("input, textarea, select")) return;
-        const step = ev.shiftKey ? KEY_STEP_FINE_A : KEY_STEP_A;
-        const rot = ((ev.shiftKey ? KEY_ROT_FINE_DEG : KEY_ROT_DEG) * Math.PI) / 180;
-        const B = screenBasis(), px = step / Math.max(M.norm(B.right), 1e-9);
-        const moves = {
-          w: () => translateScreen(0, -px), s: () => translateScreen(0, px), a: () => translateScreen(-px, 0), d: () => translateScreen(px, 0),
-          r: () => translateDepth(step), f: () => translateDepth(-step),
-          arrowleft: () => rotate(B.up, -rot), arrowright: () => rotate(B.up, rot), arrowup: () => rotate(B.right, -rot), arrowdown: () => rotate(B.right, rot),
-          q: () => rotate(B.toward, rot), e: () => rotate(B.toward, -rot),
-        };
-        const fn = moves[ev.key.toLowerCase()];
-        if (!fn) return;
-        ev.preventDefault(); fn(); refresh();
-      },
-    };
-    stage.addEventListener("mousedown", h.down, true);
-    stage.addEventListener("touchstart", h.down, { capture: true, passive: false });
-    window.addEventListener("mousemove", h.move, true);
-    window.addEventListener("touchmove", h.move, { capture: true, passive: false });
-    window.addEventListener("mouseup", h.up, true);
-    window.addEventListener("touchend", h.up, true);
-    stage.addEventListener("wheel", h.wheel, { capture: true, passive: false });
-    window.addEventListener("keydown", h.key);
+    S.controls = window.LigandControls.attach({
+      viewer: PW.view(), el: $("#stage"), M, center: S.refCentroid || [0, 0, 0],
+      getPose: () => S.pose, getXyz: () => S.curXyz, refresh, enabled: () => !!S.pose,
+    });
   }
   function unbindInput() {
-    if (!S || !S.handlers) return;
-    const h = S.handlers, stage = $("#stage");
-    stage.removeEventListener("mousedown", h.down, true);
-    stage.removeEventListener("touchstart", h.down, true);
-    window.removeEventListener("mousemove", h.move, true);
-    window.removeEventListener("touchmove", h.move, true);
-    window.removeEventListener("mouseup", h.up, true);
-    window.removeEventListener("touchend", h.up, true);
-    stage.removeEventListener("wheel", h.wheel, true);
-    window.removeEventListener("keydown", h.key);
-    S.handlers = null;
+    if (S && S.controls) { S.controls.detach(); S.controls = null; }
   }
 
   // ------------------------------------------------------------------ panels
@@ -222,13 +140,18 @@
       <p class="small">Docking = <b>search</b> + <b>scoring</b> (slide 32). Here <i>you</i> are the search. Put the ligand back where the crystal structure has it.</p>
       <div class="levels" id="dk-cases"></div>
       <h3>Difficulty</h3><div id="dk-mode"></div><p class="small muted" id="dk-mode-hint"></p>
-      <h3>Mouse does</h3><div id="dk-tool"></div>
       <div class="row"><button id="dk-start">New start</button></div>
       <h3>Show</h3><div id="dk-show"></div>
+      <details class="small"><summary><b>Colour legend</b></summary>
+        <p style="margin:4px 0"><b>Atoms</b> (sticks): <span style="color:#6d8df0">N</span> nitrogen and <span style="color:#ee7b7b">O</span> oxygen, the hydrogen-bond donors and acceptors; <span style="color:#f0cd62">S</span> sulfur. Hydrogens are not shown: X-ray structures at this resolution do not resolve them.</p>
+        <p style="margin:4px 0"><b>Carbon colour = which molecule</b>: <span style="color:#ff8fd0">pink</span> your ligand, <span style="color:#7ee787">green</span> the crystal pose, grey the pocket residues, <span style="color:#ffb454">orange</span> residues making the crystal contacts. <span style="color:#ff5c5c">Red balls</span>: waters in the contacts. Grey spheres: metal ions.</p>
+        <p style="margin:4px 0"><b>Dashed lines</b>: a crystal contact, <span style="color:#2ecc71">green</span> when your atom is within ${S.cfg.polar_contact_cutoff_A} Å of its partner, <span style="color:#ffb020">amber</span> when not yet.</p></details>
       <h3>Controls</h3>
-      <p class="small"><b>Move ligand</b>: pick the tool or hold <kbd>Shift</kbd> and drag; scroll = towards/away.<br>
-      <b>Rotate ligand</b>: pick the tool or hold <kbd>Alt</kbd> and drag; scroll = spin.<br>
-      Keys: <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move, <kbd>R</kbd>/<kbd>F</kbd> depth, arrows rotate, <kbd>Q</kbd>/<kbd>E</kbd> spin, <kbd>Shift</kbd> = fine.</p>`;
+      <ul class="small ctl-help">
+        <li><b>Camera:</b> drag empty space to rotate, scroll to zoom, middle-drag to pan.</li>
+        <li><b>Move the ligand:</b> grab it and drag (the cursor turns into a hand). It moves in the screen plane; <kbd>Shift</kbd>+scroll pushes or pulls it. <kbd>Ctrl</kbd>/<kbd>⌘</kbd>+drag moves it from anywhere.</li>
+        <li><b>Rotate the ligand:</b> <kbd>Shift</kbd>+drag, or right-drag on it. Start on an atom and the ligand turns around that atom (cyan ball), so an end you have already placed stays put; from empty space it turns around its centre. <kbd>Alt</kbd>+scroll spins it.</li>
+        <li><b>Keys:</b> <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move, <kbd>R</kbd>/<kbd>F</kbd> toward/away, arrows rotate, <kbd>Q</kbd>/<kbd>E</kbd> spin; <kbd>Shift</kbd> for small steps.</li></ul>`;
     const list = $("#dk-cases");
     S.cases.forEach((c, i) => {
       const L = S.index.levels.find((x) => x.id === c.level);
@@ -240,7 +163,6 @@
       list.appendChild(b);
     });
     $("#dk-mode").appendChild(segmented([{ value: "easy", label: "Easy" }, { value: "medium", label: "Medium" }, { value: "hard", label: "Hard" }], S.mode, setMode));
-    $("#dk-tool").appendChild(segmented([{ value: "camera", label: "Camera" }, { value: "move", label: "Move ligand" }, { value: "rotate", label: "Rotate ligand" }], S.tool, (t) => { S.tool = t; }));
     $("#dk-start").addEventListener("click", newStart);
     renderShow();
   }
@@ -280,9 +202,10 @@
         <table><thead><tr><th>Ligand</th><th>Partner</th><th class="num">Crystal</th><th class="num">Now</th></tr></thead><tbody id="dk-contacts-body"></tbody></table></div>
       <h3>Your attempts</h3><table><thead><tr><th>#</th><th>Mode</th><th class="num">RMSD</th><th class="num">Naive</th></tr></thead><tbody id="dk-history"></tbody></table>
       <details style="margin-top:12px"><summary class="small">What is the RMSD here?</summary>
-        <p class="small">RMSD = √(Σ|x<sub>i</sub> − x<sub>i</sub><sup>crystal</sup>|² / N) over the ${L.n_ligand_atoms} heavy atoms. Nothing is superimposed: both poses stay in the protein's frame.
-        Symmetric molecules have several valid atom matchings (${S.prot.ligand.automorphisms.length} here); the headline number takes the best one, the naive one does not.
-        Under ${S.cfg.success_rmsd_A} Å usually counts as a docking success (slide 35).</p></details>`;
+        <p class="small">The RMSD to the crystal pose is a <b>metric</b> for judging a pose, not a score that predicts binding. In plain words: the average distance between each ligand atom and the same atom in the crystal structure.</p>
+        <p class="small">RMSD = √(Σ|x<sub>i</sub> − x<sub>i</sub><sup>crystal</sup>|² / N) over the ${L.n_ligand_atoms} heavy atoms. Nothing is superimposed: both poses stay in the protein's frame, so it measures both where the ligand sits and how it is turned.
+        Symmetric molecules have several valid atom matchings (${S.prot.ligand.automorphisms.length} here); the headline number takes the best one, the naive one does not.</p>
+        <p class="small">Under ${S.cfg.success_rmsd_A} Å usually counts as a docking success (slide 35). RMSD alone is not enough, though: it does not check clashes, bond geometry or the key interactions, and many poses under ${S.cfg.success_rmsd_A} Å are physically implausible (<a href="https://doi.org/10.1039/D3SC04185A" target="_blank" rel="noopener">PoseBusters: Buttenschoen, Morris &amp; Deane, <i>Chem. Sci.</i> 2024</a>). That is why clashes and contacts are counted too.</p></details>`;
     $("#dk-submit").addEventListener("click", submit);
     renderHistory();
   }
@@ -325,6 +248,7 @@
     const v = S.viewer = PW.resetView();
     S.refXyz = S.prot.ligand.atoms.map((a) => a.xyz);
     S.refCentroid = M.centroid(S.refXyz);
+    unbindInput(); bindInput(); // the controls rotate about this case's ligand centre
     S.recXyz = S.prot.receptor_pdb.split("\n").filter((l) => l.startsWith("ATOM") || l.startsWith("HETATM")).map((l) => [+l.slice(30, 38), +l.slice(38, 46), +l.slice(46, 54)]);
     S.molLines = S.prot.ligand.molblock.split("\n");
     S.outward = M.normalize(M.sub(S.refCentroid, M.centroid(S.recXyz)));
@@ -337,6 +261,9 @@
     renderRight();
     setMode(S.mode);
     recentre();
+    const hint = $("#stage-hint");
+    hint.innerHTML = `<span id="dk-hint"><b>Drag ligand</b> move · <kbd>Shift</kbd>+drag rotate (start on an atom to pivot there) · <b>drag background</b> camera · <kbd>Shift</kbd>+scroll depth · <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>/arrows</span>`;
+    hint.classList.remove("hidden");
   }
 
   PW.chapter({
@@ -349,11 +276,17 @@
     },
     async enter(arg) {
       const index = await PW.get("index", "index");
-      S = { index, cfg: index.docking, cases: index.docking.cases, mode: "easy", tool: "camera", history: [], show: { ...MODES.easy.show } };
+      S = { index, cfg: index.docking, cases: index.docking.cases, mode: "easy", history: [], show: { ...MODES.easy.show } };
       const i = Math.max(0, Math.min(S.cases.length - 1, (parseInt(arg, 10) || 1) - 1));
-      bindInput();
       await openCase(i);
     },
+    tour: () => [
+      { sel: "#dk-cases", title: "Five ligands", text: "From a rigid fragment to imatinib. Each goes back into its own crystal pocket." },
+      { sel: "#dk-mode", title: "Difficulty", text: "Easy shows the crystal pose as a green ghost, medium the key contacts, hard only the protein surface. Stars depend on the aids that are switched on." },
+      { sel: "#stage", title: "Move and turn the ligand", text: "<b>Drag the ligand</b> to move it, <b>Shift+drag</b> (or right-drag on it) to rotate it, drag empty space to turn the camera. Start a rotation on an atom to keep that atom in place." },
+      { sel: "#dk-hint", title: "Controls at a glance", text: "The short version stays here; the full list (keys too) is in the left panel." },
+      { sel: "#dk-submit", title: "Submit", text: "Checks your pose against the crystal structure. After a miss the crystal pose is shown; <b>New start</b> gives a fresh try." },
+    ],
     leave() { unbindInput(); S = null; },
     recentre() { if (S) recentre(); },
   });

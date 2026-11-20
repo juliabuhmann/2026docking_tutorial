@@ -306,6 +306,7 @@ window.PW = (function () {
     $("#menu").classList.add("hidden");
     $("#game").classList.remove("hidden");
     $("#left").innerHTML = ""; $("#right").innerHTML = ""; $("#hud-mid").innerHTML = ""; $("#stage-overlay").innerHTML = "";
+    $("#stage-hint").innerHTML = ""; $("#stage-hint").classList.add("hidden");
     setHud(ch.title, "");
     resetView();
     const hash = `#/${id}${arg !== undefined && arg !== null ? `/${arg}` : ""}`;
