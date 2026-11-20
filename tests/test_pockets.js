@@ -23,7 +23,7 @@ const rank = (id, method, params) => {
 // 1. table
 const variants = [
   ["Grid, volume", "grid", P.GRID_DEFAULTS],
-  ["Grid, volume × burial", "grid", { ...P.GRID_DEFAULTS, score: "buriedness" }],
+  ["Grid, burial", "grid", { ...P.GRID_DEFAULTS, score: "buriedness" }],
   ["Alpha, size", "alpha", P.ALPHA_DEFAULTS],
   ["Alpha, hydrophobicity", "alpha", { ...P.ALPHA_DEFAULTS, score: "apolar" }],
   ["Alpha, burial", "alpha", { ...P.ALPHA_DEFAULTS, score: "buriedness" }],
@@ -39,6 +39,7 @@ console.log(md);
 
 // 2. challenges (ids as in docs/js/ch_algo.js)
 check(rank("carbonic_anhydrase", "grid", P.GRID_DEFAULTS) === 1, "a1: grid ranks the zinc pocket #1 on carbonic anhydrase");
+check(rank("streptavidin", "grid", { ...P.GRID_DEFAULTS, score: "buriedness" }) === 1, "a8 answer: grid burial puts a biotin site #1 on the tetramer");
 check(rank("streptavidin", "grid", P.GRID_DEFAULTS) === 5, "a8: on the streptavidin tetramer the grid's first biotin site is #5 (interface cavities first)");
 check(rank("t4_lysozyme", "grid", P.GRID_DEFAULTS) > 1, "a3 premise: grid by volume does not rank the T4L cavity #1");
 check(rank("t4_lysozyme", "alpha", { ...P.ALPHA_DEFAULTS, score: "apolar" }) === 1, "a3: alpha + hydrophobicity ranks the T4L cavity #1");

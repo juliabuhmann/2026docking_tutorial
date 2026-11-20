@@ -2,7 +2,7 @@
 (function () {
   "use strict";
   const { $, esc, el, toast, segmented, slider, checkbox, vec } = PW;
-  const RANK_COLORS = ["#ffd166", "#5eead4", "#b69cff", "#ff8fd0", "#60a5fa", "#ffb454", "#7ee787", "#ff8f8f"];
+  const RANK_COLORS = ["#ffd166", "#5eead4", "#b69cff", "#ff8fd0", "#60a5fa", "#f97316", "#e2e8f0", "#ff8f8f"]; // none green: that is the ligand
 
   const TASKS = [
     { id: "a1", text: "Run the <b>grid</b> method on <b>carbonic anhydrase</b> and tick <b>True ligand</b>. Is the zinc pocket ranked #1?",
@@ -10,25 +10,25 @@
       answer: "Yes. The active site is a cone about 15 Å deep, so its grid points are buried in many directions, and it is the largest enclosed pocket on the protein." },
     { id: "a8", text: "<b>Streptavidin</b> is a tetramer. Run the <b>grid</b> method and tick <b>True ligand</b>: the four biotins are not in pockets #1 to #4. Where are those?",
       check: (r) => r.method === "grid" && r.protein === "streptavidin" && r.trueRank > 1 && r.showLigand,
-      answer: "In the gaps where three of the four subunits meet: enclosed cavities about 13 Å from the nearest biotin, a little bigger than the biotin sites, which follow at #5 to #8. They only exist in the assembled tetramer. A pocket finder sees empty, enclosed space; it cannot tell a void between subunits from a binding site." },
+      answer: "In the gaps where three of the four subunits meet: enclosed cavities about 13 Å from the nearest biotin, a little bigger than the biotin sites, which follow at #5 to #8. They only exist in the assembled tetramer. A pocket finder sees empty, enclosed space; it cannot tell a void between subunits from a binding site. Switch the score to <b>Burial</b>: the biotin sites are more enclosed and move to #1." },
     { id: "a2", text: "Grid method on <b>HIV protease</b>: lower <i>buried directions</i> to 3 or less. What happens to the pockets?",
       check: (r) => r.method === "grid" && r.protein === "hiv_protease" && r.params.minBuried <= 3,
       answer: "Shallow dents on the surface now pass the burial test as well, so pockets grow, merge and multiply. The threshold trades sensitivity for specificity, like the score cut-off of a PSSM." },
-    { id: "a3", text: "<b>T4 lysozyme</b>: by size, the active-site cleft wins. Find a method or score that ranks the buried <b>benzene cavity #1</b>.",
+    { id: "a3", text: "<b>T4 lysozyme</b>: by grid volume, the active-site cleft wins. Find a method or score that ranks the buried <b>benzene cavity #1</b>.",
       check: (r) => r.protein === "t4_lysozyme" && r.trueRank === 1,
-      answer: "The engineered cavity is small but lined almost entirely by carbon atoms. Alpha-sphere scores that reward hydrophobicity or burial prefer it over the larger, more open and more polar cleft. Size is not everything." },
+      answer: "The engineered cavity is small but lined almost entirely by carbon atoms. Scores that reward burial (grid or alpha spheres) or hydrophobicity prefer it over the larger, more open and more polar cleft. Size is not everything." },
     { id: "a4", text: "<b>Carbonic anhydrase</b>: with fpocket's default radii the zinc pocket ranks around #20. Get it into the <b>top 3</b> with alpha spheres.",
       check: (r) => r.method === "alpha" && r.protein === "carbonic_anhydrase" && r.trueRank >= 1 && r.trueRank <= 3,
-      answer: "The bottom of the cone, next to the zinc, is narrow: its alpha spheres are smaller than 3.4 Å, so the default throws them away and the pocket falls apart into small pieces. A minimum radius of about 3.0 Å keeps them (slide 26)." },
+      answer: "The bottom of the cone, next to the zinc, is narrow: many of its alpha spheres are smaller than 3.4 Å, so the default throws them away and the pocket falls apart into small pieces. A minimum radius of about 3.0 Å keeps them (slide 26)." },
     { id: "a5", text: "<b>PTP1B</b>: one method ranks the allosteric site #1, the other does not find it at all. Which is which?",
       check: (r) => r.protein === "ptp1b" && r.method === "alpha" && r.trueRank === 1,
       answer: "Alpha spheres find it; the grid with these settings does not. The allosteric site is a shallow groove between two helices: not buried enough for the grid's burial threshold, but lined by enough atoms to hold a cluster of medium-sized alpha spheres." },
     { id: "a6", text: "<b>Trypsin</b>: switch the alpha-sphere score to <b>hydrophobicity</b>. The S1 pocket drops. Why?",
-      check: (r) => r.protein === "trypsin" && r.method === "alpha" && r.params.score === "apolar",
+      check: (r) => r.protein === "trypsin" && r.method === "alpha" && r.params.score === "apolar" && r.action === "score",
       answer: "S1 is made to bind a positive arginine: Asp189, Ser190 and backbone oxygens line it. A hydrophobicity score assumes drug pockets are greasy, which is often true but not here. Every descriptor carries an assumption." },
     { id: "a7", text: "<b>Benchmark</b> your settings on all ten proteins (button below the table). Can you reach <b>7 of 10 at rank 1</b>?",
       check: (r) => r.benchmarkTop1 >= 7,
-      answer: "One way: alpha spheres, hydrophobicity score, smallest sphere about 3.2 Å. No setting here reaches 10/10: a score that wins on greasy pockets loses on polar ones such as trypsin's S1. And because you tuned on these same ten proteins, 7/10 is an optimistic estimate. A fair test needs proteins you did not tune on (slide 29: positives, negatives and a held-out set)." },
+      answer: "One way: alpha spheres, hydrophobicity score, smallest sphere about 3.2 Å. No setting we tried reaches 10/10: a score that wins on greasy pockets loses on polar ones such as trypsin's S1. And because you tuned on these same ten proteins, 7/10 is an optimistic estimate. A fair test needs proteins you did not tune on (slide 29: positives, negatives and a held-out set)." },
   ];
 
   let S = null;
@@ -87,7 +87,7 @@
     }
     const cls = (r) => (r < 6 ? "#4d7cff" : r <= 30 ? "#ffd166" : "#ff6b6b");
     const circles = out.filter((c) => c[2] > 0 && c[2] < 140 && c[0] > 200 && c[0] < 440 && c[1] > -150 && c[1] < 200)
-      .map(([x, y, r]) => `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r.toFixed(1)}" fill="none" stroke="${cls(r)}" stroke-width="1.2" opacity="${r <= 30 && r >= 6 ? 0.95 : 0.5}"/>
+      .map(([x, y, r]) => `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r.toFixed(1)}" fill="none" stroke="${cls(r)}" stroke-width="1.2" opacity="${r < 6 || (r <= 30) ? 0.95 : 0.5}" ${r < 6 ? 'stroke-width="2"' : ""}/>
         <circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2.2" fill="${cls(r)}"/>`).join("");
     return art(`${atomSvg("#1f3a5c", "#557ab8")}${circles}
       <g font-size="12"><text x="16" y="62" fill="#4d7cff">○ too small: packed protein</text>
@@ -110,9 +110,9 @@
       { kicker: "Pocket algorithms · 1/4", title: "Why ask a computer?",
         html: `In Chapter 1 you found pockets by eye. For thousands of structures, from the PDB or from AlphaFold, we need an algorithm: <b>atom coordinates in, a ranked list of candidate pockets out</b>. Here are two classic ideas, live on the same ten proteins.` },
       { kicker: "Pocket algorithms · 2/4", title: "Idea 1: a grid (LIGSITE)", art: gridArt(),
-        html: `Lay a grid over the protein and keep the points that fall between atoms. From each point, look along fixed lines. If protein lies on <b>both sides</b>, the point is buried in that direction. Points buried in many directions (default ≥ ${G.minBuried} of 7 in 3D) are pocket; neighbours are clustered into pockets.` },
+        html: `Lay a grid over the protein and keep the points that fall between atoms. From each point, look along fixed lines. If protein lies on <b>both sides</b>, the point is buried in that direction. Points buried in many directions (default ≥ ${G.minBuried} of 7 in 3D) are pocket; neighbours are clustered into pockets.<div class="facts">Simplified here: each line is only followed for ${G.maxScan} Å, and a ${G.probe} Å probe is added to every atom; LIGSITE follows the whole grid line.</div>` },
       { kicker: "Pocket algorithms · 3/4", title: "Idea 2: alpha spheres (fpocket)", art: alphaArt(),
-        html: `Find every empty sphere that touches four atom centres (three in this 2D sketch) with no atom inside: the Delaunay triangulation gives them all. <b>Small</b> ones sit inside the packed protein, <b>huge</b> ones in open water. The <b>medium</b> ones (default ${A.rMin}–${A.rMax} Å) mark pockets; nearby ones are clustered.` },
+        html: `Find every empty sphere that touches four atom centres (three in this 2D sketch) with no atom inside: the Delaunay triangulation gives them all. <b>Small</b> ones sit inside the packed protein, <b>huge</b> ones in open water. The <b>medium</b> ones (default ${A.rMin}–${A.rMax} Å) mark pockets; nearby ones are clustered.<div class="facts">fpocket's radii; the clustering and the hydrophobicity test (carbon only) are simpler than fpocket's.</div>` },
       { kicker: "Pocket algorithms · 4/4", title: "Which pocket is #1?", art: rankArt(),
         html: `Both methods return many candidates, so a <b>score</b> ranks them. Your job: change the parameters and the score, tick <b>True ligand</b> to check, and solve the challenges on the right. No setting wins on every protein.` },
     ], { done: S && S.started ? "Close" : "Let's go" });
@@ -167,16 +167,16 @@
     const scoreBox = $("#algo-score");
     scoreBox.innerHTML = "";
     const scores = S.method === "grid"
-      ? [{ value: "size", label: "Volume" }, { value: "buriedness", label: "Volume × burial" }]
+      ? [{ value: "size", label: "Volume" }, { value: "buriedness", label: "Burial" }]
       : [{ value: "size", label: "Size" }, { value: "apolar", label: "Hydrophobicity", title: "spheres touching ≥3 carbon atoms" }, { value: "buriedness", label: "Burial" }];
-    scoreBox.appendChild(segmented(scores, P.score, (v) => { P.score = v; run(); }));
-    scoreBox.appendChild(el(`<p class="small muted">${S.method === "grid" ? "Burial = how many of the 7 directions are blocked, on average." :
+    scoreBox.appendChild(segmented(scores, P.score, (v) => { P.score = v; S.action = "score"; run(); }));
+    scoreBox.appendChild(el(`<p class="small muted">${S.method === "grid" ? "Burial = how many of the 7 directions are blocked, averaged over the pocket's grid points (ties: the bigger pocket first)." :
       "Hydrophobicity = number of apolar spheres (touching at least 3 carbon atoms). Burial = size × protein atoms within 8 Å of the pocket centre: big, enclosed pockets win."}</p>`));
     const show = $("#algo-show");
     show.innerHTML = "";
     show.appendChild(checkbox("True ligand (green)", S.showLigand, (v) => { S.showLigand = v; draw(); recordNow(); renderTasks(); }));
     if (S.method === "grid") show.appendChild(checkbox("All buried grid points, by burial (slow)", S.showRaw, (v) => { S.showRaw = v; run(); }));
-    else show.appendChild(checkbox("Every alpha sphere, by size class (slide 26)", S.showRaw, (v) => { S.showRaw = v; draw(); }));
+    else show.appendChild(checkbox("Every alpha sphere: <span style='color:#4d7cff'>too small</span>, <span style='color:#ffd166'>medium</span>, <span style='color:#ff6b6b'>too big</span> (slide 26). Many medium ones sit on the outer surface: size alone is not enough, clustering and the score decide.", S.showRaw, (v) => { S.showRaw = v; draw(); }));
     show.appendChild(checkbox("Spheres at full size (top pocket)", S.fullSpheres, (v) => { S.fullSpheres = v; draw(); }));
   }
 
@@ -191,6 +191,7 @@
     S.trueRank = k >= 0 ? k + 1 : 0;
     S.bench = null; // a benchmark of other settings would be stale
     recordNow();
+    verdictChip();
     draw();
     renderRight();
   }
@@ -245,7 +246,7 @@
       const e = S.evals[i], hit = e.dcc <= Pockets.DCC_SUCCESS_A;
       const size = S.method === "grid" ? `${pk.volume.toFixed(0)} Å³` : `${pk.n}`;
       return `<tr class="${hit ? "hit" : ""}"><td><span class="swatch" style="background:${RANK_COLORS[i]}"></span>#${i + 1}</td><td class="num">${size}</td>
-        <td class="num">${pk.score.toFixed(S.method === "grid" ? 0 : 1)}</td><td class="num">${e.dcc.toFixed(1)}</td><td>${hit ? "✓" : ""}</td></tr>`;
+        <td class="num">${pk.score.toFixed(S.method === "grid" && S.params.score === "size" ? 0 : 1)}</td><td class="num">${e.dcc.toFixed(1)}</td><td>${hit ? "✓" : ""}</td></tr>`;
     }).join("");
     right.innerHTML = `<h3>Result</h3>
       <div class="box ${S.trueRank === 1 ? "gold" : ""}"><b>${n} pocket${n === 1 ? "" : "s"}</b> in ${S.ms.toFixed(0)} ms. ${verdict}
@@ -257,6 +258,11 @@
     $("#algo-bench").addEventListener("click", benchmark);
     if (S.bench) renderBench();
     renderTasks();
+  }
+
+  function verdictChip() {
+    const k = S.trueRank;
+    $("#hud-mid").innerHTML = `<span class="chip" style="color:${k === 1 ? "var(--good)" : k > 0 ? "var(--warn)" : "var(--bad)"}">${k ? `true pocket #${k}` : "true pocket not found"}</span>`;
   }
 
   async function benchmark() {
@@ -285,7 +291,7 @@
       <table style="margin-top:6px">${b.rows.map((r) => `<tr><td>${esc(r.title)}</td><td class="num ${r.rank === 1 ? "yes" : r.rank ? "" : "no"}">${r.rank ? `#${r.rank}` : "–"}</td></tr>`).join("")}</table></div>`;
   }
 
-  function recordNow() { record({ protein: S.protId, method: S.method, params: { ...S.params }, trueRank: S.trueRank, showLigand: S.showLigand }); }
+  function recordNow() { record({ protein: S.protId, method: S.method, params: { ...S.params }, trueRank: S.trueRank, showLigand: S.showLigand, action: S.action }); S.action = null; }
   function record(r) {
     S.last = r;
     TASKS.forEach((t) => {
@@ -344,12 +350,8 @@
     async afterTour() { await intro(false); if (S) S.started = true; },
     tour: () => [
       { sel: "#algo-intro", title: "How the methods work", text: "A short illustrated intro to the grid and alpha-sphere methods. It opens by itself the first time." },
-      { sel: "#algo-prot", title: "Same ten proteins", text: "The proteins from Chapter 1. Pick one to run the methods on." },
-      { sel: "#algo-method", title: "Two methods", text: "<b>Grid</b> (LIGSITE-like) or <b>Alpha spheres</b> (fpocket-like)." },
-      { sel: "#algo-params", title: "Turn the knobs", text: "Every slider re-runs the method instantly. The grey line under each says what it does." },
-      { sel: "#algo-score", title: "Ranking", text: "Which property decides pocket #1." },
-      { sel: "#algo-show", title: "Check yourself", text: "<b>True ligand</b> shows where the drug really binds." },
-      { sel: "#right table", title: "The ranking", text: "Pockets by rank, with their distance to the true ligand (DCC). A ✓ marks the correct one." },
+      { sel: "#algo-method", title: "Method and knobs", text: "<b>Grid</b> (LIGSITE-like) or <b>Alpha spheres</b> (fpocket-like). Every slider re-runs the method instantly; the score decides which pocket is #1." },
+      { sel: "#algo-show", title: "Check yourself", text: "<b>True ligand</b> shows where the drug really binds. The chip at the top always says where the true pocket ranks." },
       { sel: "#algo-tasks", title: "Challenges", text: "Eight questions. They tick themselves when you reach the right setting, and then show the explanation." },
     ],
     leave() { S = null; },

@@ -156,9 +156,10 @@
       pockets.push({ points: pts, volume, meanBuried, centre: centroid(pts) });
     }
     const found = pockets.filter(Boolean);
-    const score = params.score === "buriedness" ? (p) => p.volume * (p.meanBuried - params.minBuried + 1) : (p) => p.volume;
+    // "buriedness": how many of the 7 directions are blocked, averaged over the pocket's points
+    const score = params.score === "buriedness" ? (p) => p.meanBuried : (p) => p.volume;
     found.forEach((p) => { p.score = score(p); });
-    found.sort((a, b) => b.score - a.score);
+    found.sort((a, b) => b.score - a.score || b.volume - a.volume); // ties: the bigger pocket first
     return { pockets: found, buriedPoints, grid: { nx, ny, nz, h, points: N } };
   }
 
