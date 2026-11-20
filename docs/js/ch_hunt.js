@@ -5,6 +5,9 @@
 
   // Feedback distances (A from the clicked atom to the nearest ligand atom). Feel only.
   const HOT_A = 8, WARM_A = 15;
+  // Surface view: how far beyond the van der Waals radius a click still counts as on an atom. About
+  // the solvent probe radius (1.4 A), which is how far the molecular surface can sit from the atoms.
+  const SURF_PICK_PAD_A = 1.2;
   const CHAIN_COLORS = ["#8fb8ff", "#ffb38a", "#b4f0a8", "#e3b6ff"];
 
   let S = null; // state of the open level
@@ -78,20 +81,29 @@
     const v = S.viewer, m = S.model;
     const chains = [...new Set(S.atoms.chain)];
     const colorOf = (c) => CHAIN_COLORS[chains.indexOf(c) % CHAIN_COLORS.length];
+    const shown = S.solved || S.revealed;
     m.setStyle({}, {});
+    if (S.mode === "surface") {
+      // once the answer is shown: pocket-lining residues gold, surface see-through so the ligand shows
+      const cf = (a) => (shown && S.pocketKeys.has(`${a.chain}:${a.resi}`) ? "#ffd166" : colorOf(a.chain));
+      const op = shown ? 0.62 : 1;
+      if (!S.surf) S.surf = PW.surface(v, m, cf, op);
+      else S.surf.restyle(cf, op);
+    } else if (S.surf) { S.surf.remove(); S.surf = null; }
+    // a sliced surface is a hollow shell; fill it with the atoms so the cut face looks solid
+    const atomsToo = S.mode === "atoms" || (S.mode === "surface" && S.slice > 0);
+    S.styledSliced = S.slice > 0;
     chains.forEach((c) => {
       if (S.mode === "cartoon") {
         m.setStyle({ chain: c }, { cartoon: { color: colorOf(c), opacity: 1 } });
-      } else {
+      } else if (atomsToo) {
         m.setStyle({ chain: c }, { sphere: { colorscheme: { prop: "elem", map: { C: colorOf(c), N: "#6d8df0", O: "#ee7b7b", S: "#f0cd62" } }, scale: 1 } });
       }
     });
-    m.setStyle({ hetflag: true }, { sphere: { color: "#c0c7d4", scale: 0.9 } });
-    if (S.solved || S.revealed) {
-      const pocket = S.prot.pocket_residues;
-      pocket.forEach((r) => {
-        const sel = { chain: r.chain, resi: r.resi };
-        if (S.mode === "cartoon") m.setStyle(sel, { stick: { radius: 0.18, colorscheme: "whiteCarbon" } }, true);
+    if (S.mode !== "surface" || atomsToo) m.setStyle({ hetflag: true }, { sphere: { color: "#c0c7d4", scale: 0.9 } });
+    if (shown && S.mode !== "atoms") {
+      S.prot.pocket_residues.forEach((r) => {
+        m.setStyle({ chain: r.chain, resi: r.resi }, { stick: { radius: 0.18, colorscheme: "whiteCarbon" } }, true);
       });
     }
     v.render();
@@ -138,7 +150,8 @@
     const tries = S.tries, maxStars = S.hintLevel >= 3 ? 1 : 3;
     let html = `<h3>Level ${S.i + 1} of ${S.index.levels.length}</h3>
       <div class="big" style="font-size:22px">${esc(L.title)}</div>
-      <p class="small muted"><span class="diff ${L.difficulty}">${L.difficulty}</span> &nbsp;PDB <a href="https://www.rcsb.org/structure/${L.pdb_id}" target="_blank" rel="noopener">${L.pdb_id}</a> · ${L.chains.length > 1 ? `${L.chains.length} chains` : "1 chain"} · ${L.resolution ? `${L.resolution} Å` : ""}</p>`;
+      <p class="small muted"><span class="diff ${L.difficulty}">${L.difficulty}</span> &nbsp;PDB <a href="https://www.rcsb.org/structure/${L.pdb_id}" target="_blank" rel="noopener">${L.pdb_id}</a> · ${L.chains.length > 1 ? `${L.chains.length} chains` : "1 chain"} · ${L.resolution ? `${L.resolution} Å` : ""}</p>
+      ${L.intro && L.intro.length ? `<button id="hunt-about" class="ghost small"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" style="vertical-align:-2px;margin-right:5px"><circle cx="8" cy="8" r="6.6"/><path d="M8 7v4.4" stroke-linecap="round"/><circle cx="8" cy="4.6" r=".9" fill="currentColor" stroke="none"/></svg>About this protein</button>` : ""}`;
     if (!S.solved && !S.revealed) {
       html += `<div class="box acc"><b>Task:</b> click on the protein where ${esc(L.ligand_label)} binds.
         <div class="small muted" style="margin-top:4px">Tries so far: <b>${tries}</b>. Solve on the first try for ${stars(maxStars)}${maxStars < 3 ? " (capped by the hint)" : ""}.</div></div>
@@ -159,6 +172,7 @@
     renderLog();
     renderHints();
     const q = (id) => document.getElementById(id);
+    if (q("hunt-about")) q("hunt-about").addEventListener("click", () => intro(true));
     if (q("hunt-hint")) q("hunt-hint").addEventListener("click", nextHint);
     if (q("hunt-reveal")) q("hunt-reveal").addEventListener("click", reveal);
     if (q("hunt-next")) q("hunt-next").addEventListener("click", () => openLevel(S.index, S.i + 1));
@@ -174,7 +188,7 @@
 
   const HINTS = [
     "Pockets are concave: a groove, a cleft or a hole that a small molecule could sit in. Turn the protein around before you click.",
-    "Switch to the <b>Atoms</b> view to see the real shape of the surface. If nothing looks deep enough, use the <b>slice</b> slider: some pockets are completely buried.",
+    "Use the <b>Surface</b> view to see the real shape of the protein. If nothing looks deep enough, use the <b>slice</b> slider: some pockets are completely buried.",
     "Ask an algorithm: the three largest pockets found by the grid method from Chapter 2 are now shown as dots. Is the biggest one always the right one? (This hint caps the level at ★.)",
   ];
   function renderHints() {
@@ -233,7 +247,7 @@
   function reveal() {
     S.revealed = true;
     drawLigand(); styleProtein(); renderRight();
-    S.viewer.zoomTo({ model: S.ligModel }, 600);
+    S.viewer.zoomTo({ model: S.model, or: S.prot.pocket_residues.map((r) => ({ chain: r.chain, resi: r.resi })) }, 600);
     applySlice();
   }
 
@@ -245,7 +259,7 @@
       if (!down || e.button > 0) return;
       const moved = Math.hypot(e.pageX - down.x, e.pageY - down.y);
       if (moved < 5 && Date.now() - down.t < 600) {
-        const radii = S.mode === "cartoon" ? S.cartoonRadii : S.vdwRadii;
+        const radii = S.mode === "cartoon" ? S.cartoonRadii : S.mode === "surface" ? S.surfRadii : S.vdwRadii;
         onPick(pickAtom(S.viewer, S.atoms, radii, e.pageX, e.pageY, S.cutDepth));
       }
       down = null;
@@ -260,8 +274,9 @@
   }
 
   // ------------------------------------------------------------------ open a level
-  async function openLevel(index, i) {
+  async function openLevel(index, i, first) {
     unbindClicks();
+    PW.closeCards();
     const L = index.levels[i];
     PW.setArg(i + 1);
     PW.setHud("Pocket hunt", `Level ${i + 1}: ${L.title}`);
@@ -276,7 +291,10 @@
       vdwRadii: atoms.elem.map(Pockets.vdw),
       // in cartoon view the backbone is what you see; accept clicks within 2.2 A of any atom
       cartoonRadii: atoms.elem.map(() => 2.2),
-      mode: S ? S.mode : "atoms", slice: 0, cutDepth: Infinity,
+      // the molecular surface bridges the gaps between atoms; accept clicks a little outside them
+      surfRadii: atoms.elem.map((e) => Pockets.vdw(e) + SURF_PICK_PAD_A),
+      surf: null,
+      mode: S ? S.mode : "surface", slice: 0, cutDepth: Infinity,
       tries: 0, probes: [], log: [], hintLevel: 0, hintPockets: null, solved: false, revealed: false, ligModel: null,
     };
     // radius of the protein around its centre, for the slice slider
@@ -289,10 +307,17 @@
 
     renderLeft(index, i);
     const views = $("#hunt-views");
-    views.appendChild(segmented([{ value: "atoms", label: "Atoms" }, { value: "cartoon", label: "Cartoon" }], S.mode, (m) => { S.mode = m; styleProtein(); }));
+    views.appendChild(segmented([
+      { value: "surface", label: "Surface", title: "Molecular surface: the shape a ligand actually sees" },
+      { value: "atoms", label: "Atoms", title: "Every atom as a sphere, coloured by element" },
+      { value: "cartoon", label: "Cartoon", title: "The backbone fold: helices and strands" }], S.mode, (m) => { S.mode = m; styleProtein(); }));
     $("#hunt-slice").appendChild(slider({
       label: "Slice into the protein", min: 0, max: Math.round(r * 1.4), step: 1, value: 0, unit: " Å",
-      onInput: (val) => { S.slice = val; applySlice(); },
+      onInput: (val) => {
+        S.slice = val;
+        if (S.mode === "surface" && (val > 0) !== S.styledSliced) styleProtein();
+        applySlice();
+      },
     }));
     styleProtein();
     viewer.zoomTo();
@@ -304,6 +329,21 @@
       <span style="color:#ffb454">warm</span> ≤ ${WARM_A} Å, <span style="color:#60a5fa">cold</span> further from the ligand.</div>`);
     $("#stage-overlay").innerHTML = "";
     $("#stage-overlay").appendChild(legend);
+    if (!first) intro(false);
+  }
+
+  // ------------------------------------------------------------------ short intro before each level
+  // Automatic the first time a level is opened in this browser; the "About" button replays it.
+  function intro(force) {
+    const L = S.level, key = `intro:hunt:${L.id}`;
+    if (!L.intro || !L.intro.length || (!force && PW.seen(key))) return Promise.resolve();
+    PW.markSeen(key);
+    const n = L.intro.length;
+    const facts = `<div class="facts">${esc(L.ligand_name)} · ${L.n_ligand_atoms} heavy atoms · PDB ${esc(L.pdb_id)}</div>`;
+    return PW.cards(L.intro.map((c, j) => ({
+      kicker: `Level ${S.i + 1} · ${esc(L.title)} · ${j + 1}/${n}`,
+      title: c.title, html: c.text + (c.title === "The ligand" ? facts : ""),
+    })), { done: S.solved || S.revealed ? "Close" : "Start hunting" });
   }
 
   PW.chapter({
@@ -318,8 +358,17 @@
       const index = await PW.get("index", "index");
       let i = Math.max(0, Math.min(index.levels.length - 1, (parseInt(arg, 10) || 1) - 1));
       if (!unlocked(index, i)) i = 0;
-      await openLevel(index, i);
+      await openLevel(index, i, true);
     },
+    afterTour() { if (S) return intro(false); },
+    tour: () => [
+      { sel: "#left .levels", title: "Ten levels", text: "From easy to hard. The next one unlocks when you solve (or reveal) the current one. Stars: ★★★ on the first click." },
+      { sel: "#hunt-views", title: "Three views", text: "<b>Surface</b>: the shape a ligand sees, best for spotting pockets. <b>Atoms</b>: every atom as a sphere. <b>Cartoon</b>: the fold." },
+      { sel: "#hunt-slice", title: "Slice", text: "Cuts away the front of the protein so you can look (and click) inside. Some pockets are completely buried." },
+      { sel: "#stage", title: "Click to probe", text: "A short click on the protein is a guess. The mark is coloured hot, warm or cold by its distance to the ligand." },
+      { sel: "#hunt-hint", title: "Stuck?", text: "Three hints, the last one runs a pocket finder (and caps the level at ★). <b>Show me</b> reveals the answer." },
+      { sel: "#hunt-about", title: "About this protein", text: "Every level starts with a few short cards on the protein and its ligand. Reopen them here." },
+    ],
     leave() { unbindClicks(); S = null; },
     recentre() { if (S) { S.viewer.zoomTo(); applySlice(); } },
   });
