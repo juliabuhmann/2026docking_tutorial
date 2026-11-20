@@ -397,7 +397,7 @@ PW.data('index', 'index', {
   {
    "id": "abl_dfg",
    "title": "Abl kinase: the DFG flip that imatinib needs",
-   "ca_rmsd_A": 5.12
+   "ca_rmsd_A": 5.26
   }
  ],
  "cofold": [

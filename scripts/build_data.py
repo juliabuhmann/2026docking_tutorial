@@ -295,11 +295,27 @@ def build_level(level: dict, cfg: dict, dock_cfg: dict) -> dict:
 
 
 # ----------------------------------------------------------------------------- morphs
-def chain_residues(atoms, chain):
-    res = {}
+def modified_residues(pdb_text: str) -> dict:
+    """MODRES records: (chain, resi, icode) -> (modified name, standard parent), e.g. PTR -> TYR."""
+    out = {}
+    for l in pdb_text.splitlines():
+        if l.startswith("MODRES"):
+            out[(l[16], int(l[18:22]), l[22].strip())] = (l[12:15].strip(), l[24:27].strip())
+    return out
+
+
+def chain_residues(atoms, chain, modres=None):
+    """Residues of one chain. Modified residues listed in MODRES (HETATM records, e.g. a
+    phosphotyrosine) are kept and named by their standard parent; 'modified' keeps the original."""
+    res, modres = {}, modres or {}
     for a in atoms:
-        if a["chain"] == chain and a["record"] == "ATOM":
-            res.setdefault((a["resi"], a["icode"]), {"resn": a["resn"], "atoms": {}})["atoms"][a["name"]] = a
+        if a["chain"] != chain:
+            continue
+        mod = modres.get((a["chain"], a["resi"], a["icode"]))
+        if a["record"] != "ATOM" and not (mod and mod[0] == a["resn"]):
+            continue
+        r = res.setdefault((a["resi"], a["icode"]), {"resn": mod[1] if mod else a["resn"], "modified": mod[0] if mod else None, "atoms": {}})
+        r["atoms"][a["name"]] = a
     return [v | {"key": k} for k, v in sorted(res.items())]
 
 
@@ -320,9 +336,15 @@ def kabsch(P, Q):
 
 def build_morph(pair: dict, trim: float) -> dict:
     print(f"[morph {pair['id']}] {pair['start']['pdb_id']} -> {pair['end']['pdb_id']}")
-    s_atoms = read_atoms(fetch(PDB_URL.format(pdb_id=pair["start"]["pdb_id"]), f"{pair['start']['pdb_id']}.pdb"))
-    e_atoms = read_atoms(fetch(PDB_URL.format(pdb_id=pair["end"]["pdb_id"]), f"{pair['end']['pdb_id']}.pdb"))
-    S, E = chain_residues(s_atoms, pair["start"]["chain"]), chain_residues(e_atoms, pair["end"]["chain"])
+    s_text = fetch(PDB_URL.format(pdb_id=pair["start"]["pdb_id"]), f"{pair['start']['pdb_id']}.pdb")
+    e_text = fetch(PDB_URL.format(pdb_id=pair["end"]["pdb_id"]), f"{pair['end']['pdb_id']}.pdb")
+    s_atoms, e_atoms = read_atoms(s_text), read_atoms(e_text)
+    S = chain_residues(s_atoms, pair["start"]["chain"], modified_residues(s_text))
+    E = chain_residues(e_atoms, pair["end"]["chain"], modified_residues(e_text))
+    for tag, R in (("start", S), ("end", E)):
+        for r in R:
+            if r["modified"]:
+                print(f"    {tag}: {r['modified']} {r['key'][0]} counted as {r['resn']}")
     s_seq = "".join(one_letter(r["resn"]) for r in S)
     e_seq = "".join(one_letter(r["resn"]) for r in E)
     aln = gemmi.align_string_sequences(list(s_seq), list(e_seq), [])
