@@ -465,5 +465,23 @@ PW.data('index', 'index', {
     "note": "37 heavy atoms and a long shape: orientation is everything."
    }
   ]
+ },
+ "versions": {
+  "cofold_abl_imatinib.js": "2dc4d73c57",
+  "cofold_streptavidin.js": "7dcdcafe5f",
+  "cofold_trypsin.js": "da54bcfefd",
+  "morph_abl_dfg.js": "b9f6bf11c7",
+  "morph_adk.js": "e51265cbca",
+  "morph_mbp.js": "1db47b4f7a",
+  "prot_abl_imatinib.js": "ecad3d9961",
+  "prot_acetylcholinesterase.js": "a1ba44fadb",
+  "prot_carbonic_anhydrase.js": "1085c030d4",
+  "prot_estrogen_receptor.js": "bf988a34f8",
+  "prot_hiv_protease.js": "9f12400d2c",
+  "prot_kras.js": "b7f80c8c91",
+  "prot_ptp1b.js": "0dfc27ffa0",
+  "prot_streptavidin.js": "6cc2905922",
+  "prot_t4_lysozyme.js": "a36810a1a4",
+  "prot_trypsin.js": "c3704bad27"
  }
 });

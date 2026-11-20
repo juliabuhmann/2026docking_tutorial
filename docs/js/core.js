@@ -5,7 +5,7 @@ window.PW = (function () {
 
   // ------------------------------------------------------------------ data
   // Data files are <script>s that call PW.data(kind, key, obj); see scripts/build_data.py.
-  const store = {}, loading = {};
+  const store = {}, loading = {}, BOOT_TIME = Date.now();
   function data(kind, key, obj) { store[`${kind}:${key}`] = obj; }
   function loadScript(src) {
     if (!loading[src]) {
@@ -19,8 +19,12 @@ window.PW = (function () {
     }
     return loading[src];
   }
+  // The index is always fetched fresh (it is small); every other data file carries its content hash
+  // from the index, so a changed file is never taken from the browser cache.
   async function get(kind, key) {
-    const file = kind === "index" ? "data/index.js" : `data/${kind}_${key}.js`;
+    if (kind !== "index") await get("index", "index");
+    const name = `${kind}_${key}.js`, index = store["index:index"];
+    const file = kind === "index" ? `data/index.js?t=${BOOT_TIME}` : `data/${name}${index && index.versions && index.versions[name] ? `?v=${index.versions[name]}` : ""}`;
     if (!store[`${kind}:${key}`]) await loadScript(file);
     return store[`${kind}:${key}`];
   }
