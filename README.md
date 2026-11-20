@@ -14,7 +14,7 @@ been tried by students, on touch devices, or in Safari or Firefox.
 | 2 · Pocket algorithms | Run a grid method (LIGSITE-like) and alpha spheres (fpocket-like) live on the same proteins, change the parameters and the score, benchmark on all ten. Seven challenges. Opens with a four-card illustrated intro to both methods (2D sketches computed on a toy protein). | 22–29 |
 | 3 · Dock it yourself | Move and rotate the crystal ligand back into its pocket, watching symmetry-corrected RMSD, clashes and contacts. Five ligands, three difficulty modes. Ported from the `docking_game` prototype. | 32–35 |
 | 4 · Apo to holo | Morph between two crystal structures (adenylate kinase, maltose-binding protein, the Abl DFG flip), watch the pocket appear, count ligand clashes per frame. | 31 |
-| 5 · Co-folding | Watch an illustration of diffusion-style denoising, fold the complex for real in the browser with [LocalFold](https://localfold.org), then upload the prediction to get its pocket-aligned ligand RMSD. | 39, 57 |
+| 5 · Co-folding | Short intro cards on co-folding, then step through AlphaFold 3's own diffusion sampler (its 200-step schedule, extra noise and random rotations; only the network is replaced by the crystal structure, and the page lists what differs), fold the complex for real in the browser with [LocalFold](https://localfold.org), then upload the prediction to get its pocket-aligned ligand RMSD. | 39, 57 |
 
 The look and the menu-of-chapters structure were inspired by
 [Cellworks](https://dennisgankin.github.io/cellworks/); no code was taken from it.
@@ -66,6 +66,7 @@ python tests/check_rmsd_rdkit.py            # ... and checks them against RDKit 
 python tests/check_automorphisms.py         # every symmetry matching is a real graph automorphism
 python tests/make_compare_fixtures.py       # fake predictions from the crystal structures
 node tests/test_compare.js                  # Chapter 5 scoring on them: 0.00 A, 3.00 A, and a warning
+node tests/test_diffusion.js                # AF3 schedule endpoints, rotations, sampler ends on the crystal
 ```
 
 All pass as of this commit. `tests/out/` is generated and not committed.
@@ -130,8 +131,10 @@ texts are pitched right.
 - The pocket finders are simplified (see `docs/js/pockets.js`); "found" means DCC ≤ 4 Å, which
   is strict for long ligands such as imatinib.
 - Morph frames are a straight-line interpolation between two crystal structures, not a pathway.
-- The Chapter 5 animation adds noise to the crystal structure and removes it again. It shows the
-  idea of denoising and is labelled as an illustration, not a prediction.
+- Chapter 5 runs AlphaFold 3's sampler (`docs/js/diffusion.js`, following `diffusion_head.py` of
+  google-deepmind/alphafold3 at commit `5870e09`) with an oracle in place of the network: the crystal
+  structure superposed onto the noisy atoms. So it always ends on the crystal. One sample instead of
+  five, crystal heavy atoms only, and each frame superposed onto the crystal for display.
 - Streptavidin is a tetramer; one chain is shown and folded.
 
 ## Credits
