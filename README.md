@@ -10,14 +10,18 @@ been tried by students, on touch devices, or in Safari or Firefox.
 
 | Chapter | What students do | Lecture slides |
 |---|---|---|
-| 1 · Pocket hunt | Click where the ligand binds on 10 proteins, easy to hard: open clefts, a dimer interface, buried cavities, an allosteric site, the "undruggable" KRAS pocket. Hot/cold feedback, stars, a story per protein. | 21 |
-| 2 · Pocket algorithms | Run a grid method (LIGSITE-like) and alpha spheres (fpocket-like) live on the same proteins, change the parameters and the score, benchmark on all ten. Seven challenges. | 22–29 |
+| 1 · Pocket hunt | Click where the ligand binds on 10 proteins, easy to hard: open clefts, a dimer interface, buried cavities, an allosteric site, the "undruggable" KRAS pocket. Three views (surface, atoms, cartoon) and a slice. Short skippable intro cards on the protein and ligand before each level; hot/cold feedback, stars, a story per protein after it. | 21 |
+| 2 · Pocket algorithms | Run a grid method (LIGSITE-like) and alpha spheres (fpocket-like) live on the same proteins, change the parameters and the score, benchmark on all ten. Seven challenges. Opens with a four-card illustrated intro to both methods (2D sketches computed on a toy protein). | 22–29 |
 | 3 · Dock it yourself | Move and rotate the crystal ligand back into its pocket, watching symmetry-corrected RMSD, clashes and contacts. Five ligands, three difficulty modes. Ported from the `docking_game` prototype. | 32–35 |
 | 4 · Apo to holo | Morph between two crystal structures (adenylate kinase, maltose-binding protein, the Abl DFG flip), watch the pocket appear, count ligand clashes per frame. | 31 |
 | 5 · Co-folding | Watch an illustration of diffusion-style denoising, fold the complex for real in the browser with [LocalFold](https://localfold.org), then upload the prediction to get its pocket-aligned ligand RMSD. | 39, 57 |
 
 The look and the menu-of-chapters structure were inspired by
 [Cellworks](https://dennisgankin.github.io/cellworks/); no code was taken from it.
+
+A guided tour (coach marks) introduces the buttons on the first visit to the menu and to the game
+screen, plus each chapter's own controls the first time that chapter opens. The **Tour** button
+(top bar) and **Take the tour** (menu) replay it. What has been seen is stored with the progress.
 
 ## Run it
 
@@ -50,7 +54,7 @@ conda activate ../conda_envs/docking      # rdkit, gemmi, scipy, numpy
 python scripts/build_data.py
 ```
 
-The texts in `proteins.json` and `morphs.json` (stories, hints, decoy feedback) are written for
+The texts in `proteins.json` and `morphs.json` (stories, intro cards, hints, decoy feedback) are written for
 students. Each structure's own paper is fetched from RCSB and shown with it.
 
 ## Tests
@@ -113,6 +117,13 @@ Not checked yet:
 - a real AlphaFold Server mmCIF (tested only with gemmi-written mmCIF)
 - touch interaction, Safari, Firefox, and speed on student laptops
 - whether the stories are pitched right for the course
+
+Added later (guided tour, intro cards, surface view), checked in the same headless Chromium:
+the menu tour, the Chapter 1 and 2 tours and intro cards (keyboard and click), the three views in
+Chapter 1 including slicing and reveal in surface view, the surface view in Chapter 2, and the
+tour and intro cards at 390 px width with touch taps, without page errors. Not checked: how the
+surface view performs on student laptops (it is slow in software WebGL), and whether the intro
+texts are pitched right.
 
 ## Known simplifications
 
