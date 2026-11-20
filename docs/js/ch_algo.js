@@ -5,8 +5,8 @@
   const RANK_COLORS = ["#ffd166", "#5eead4", "#b69cff", "#ff8fd0", "#60a5fa", "#ffb454", "#7ee787", "#ff8f8f"];
 
   const TASKS = [
-    { id: "a1", text: "Run the <b>grid</b> method on <b>streptavidin</b>. Is biotin's pocket ranked #1?",
-      check: (r) => r.method === "grid" && r.protein === "streptavidin" && r.trueRank === 1,
+    { id: "a1", text: "Run the <b>grid</b> method on <b>streptavidin</b> and tick <b>True ligand</b>. Is biotin's pocket ranked #1?",
+      check: (r) => r.method === "grid" && r.protein === "streptavidin" && r.trueRank === 1 && r.showLigand,
       answer: "Yes. Biotin's pocket is deep and enclosed, so its grid points are buried in many directions, and it is the biggest pocket on this small protein." },
     { id: "a2", text: "Grid method on <b>HIV protease</b>: lower <i>buried directions</i> to 3 or less. What happens to the pockets?",
       check: (r) => r.method === "grid" && r.protein === "hiv_protease" && r.params.minBuried <= 3,
@@ -168,10 +168,10 @@
       : [{ value: "size", label: "Size" }, { value: "apolar", label: "Hydrophobicity", title: "spheres touching ≥3 carbon atoms" }, { value: "buriedness", label: "Burial" }];
     scoreBox.appendChild(segmented(scores, P.score, (v) => { P.score = v; run(); }));
     scoreBox.appendChild(el(`<p class="small muted">${S.method === "grid" ? "Burial = how many of the 7 directions are blocked, on average." :
-      "Hydrophobicity = number of apolar spheres (touching at least 3 carbon atoms). Burial = protein atoms within 8 Å of the pocket centre."}</p>`));
+      "Hydrophobicity = number of apolar spheres (touching at least 3 carbon atoms). Burial = size × protein atoms within 8 Å of the pocket centre: big, enclosed pockets win."}</p>`));
     const show = $("#algo-show");
     show.innerHTML = "";
-    show.appendChild(checkbox("True ligand (green)", S.showLigand, (v) => { S.showLigand = v; draw(); }));
+    show.appendChild(checkbox("True ligand (green)", S.showLigand, (v) => { S.showLigand = v; draw(); recordNow(); renderTasks(); }));
     if (S.method === "grid") show.appendChild(checkbox("All buried grid points, by burial (slow)", S.showRaw, (v) => { S.showRaw = v; run(); }));
     else show.appendChild(checkbox("Every alpha sphere, by size class (slide 26)", S.showRaw, (v) => { S.showRaw = v; draw(); }));
     show.appendChild(checkbox("Spheres at full size (top pocket)", S.fullSpheres, (v) => { S.fullSpheres = v; draw(); }));
@@ -186,7 +186,8 @@
     S.evals = S.result.pockets.map((pk) => Pockets.evaluate(pk, S.ligXyz));
     const k = S.evals.findIndex((e) => e.dcc <= Pockets.DCC_SUCCESS_A);
     S.trueRank = k >= 0 ? k + 1 : 0;
-    record({ protein: S.protId, method: S.method, params: { ...S.params }, trueRank: S.trueRank });
+    S.bench = null; // a benchmark of other settings would be stale
+    recordNow();
     draw();
     renderRight();
   }
@@ -284,6 +285,7 @@
       <table style="margin-top:6px">${b.rows.map((r) => `<tr><td>${esc(r.title)}</td><td class="num ${r.rank === 1 ? "yes" : r.rank ? "" : "no"}">${r.rank ? `#${r.rank}` : "–"}</td></tr>`).join("")}</table></div>`;
   }
 
+  function recordNow() { record({ protein: S.protId, method: S.method, params: { ...S.params }, trueRank: S.trueRank, showLigand: S.showLigand }); }
   function record(r) {
     S.last = r;
     TASKS.forEach((t) => {
