@@ -216,10 +216,27 @@ def alpha_spheres(xyz: np.ndarray):
 
 
 # ----------------------------------------------------------------------------- one level
+def assembly_pdb(pid: str, assembly: str) -> str:
+    """The biological assembly `assembly` of an entry, built by gemmi from the mmCIF's symmetry
+    operators, as PDB text; copied chains get new one-letter names (A -> B, C, D)."""
+    st = gemmi.read_structure(str(CACHE / f"{pid}.cif")) if (CACHE / f"{pid}.cif").exists() else None
+    if st is None:
+        fetch(CIF_URL.format(pdb_id=pid), f"{pid}.cif")
+        st = gemmi.read_structure(str(CACHE / f"{pid}.cif"))
+    asm = next(a for a in st.assemblies if a.name == assembly)
+    out = gemmi.Structure()
+    out.add_model(gemmi.make_assembly(asm, st[0], gemmi.HowToNameCopiedChain.Short))
+    print(f"    assembly {assembly} ({asm.oligomeric_details}): chains {[c.name for c in out[0]]}")
+    return out.make_pdb_string()
+
+
 def build_level(level: dict, cfg: dict, dock_cfg: dict) -> dict:
     pid = level["pdb_id"]
     print(f"[{level['id']}] {pid} / {level['ligand_id']}")
-    atoms = read_atoms(fetch(PDB_URL.format(pdb_id=pid), f"{pid}.pdb"))
+    if level.get("assembly"):
+        atoms = read_atoms(assembly_pdb(pid, level["assembly"]))
+    else:
+        atoms = read_atoms(fetch(PDB_URL.format(pdb_id=pid), f"{pid}.pdb"))
     keep_het = set(level.get("keep_hetero", []))
     chains = set(level["receptor_chains"])
     receptor = [a for a in atoms if a["chain"] in chains and
@@ -237,6 +254,14 @@ def build_level(level: dict, cfg: dict, dock_cfg: dict) -> dict:
     cutoff = cfg["pocket_residue_cutoff_A"]
     pocket = residues_near([a["xyz"] for a in lig], receptor, cutoff)
     pocket_keys = {(r["chain"], r["resi"]) for r in pocket}
+    # In an assembly the other copies of the ligand mark equivalent binding sites: clicking or
+    # finding any of them is just as right. The ligand in `ligand_chain` stays the reference.
+    equivalent = []
+    for c in sorted(chains - {level["ligand_chain"]}) if level.get("assembly") else []:
+        other = first_instance(atoms, level["ligand_id"], c)
+        if other:
+            equivalent.append({"chain": c, "xyz": [a["xyz"] for a in other],
+                               "residues": residues_near([a["xyz"] for a in other], receptor, cutoff)})
 
     decoys = []
     for d in level.get("decoys", []):
@@ -284,6 +309,7 @@ def build_level(level: dict, cfg: dict, dock_cfg: dict) -> dict:
         },
         "pocket_residues": pocket,
         "pocket_residue_cutoff_A": cutoff,
+        "equivalent_sites": equivalent,
         "decoys": decoys,
         "alpha": {
             "x": centres[:, 0].round(2).tolist(), "y": centres[:, 1].round(2).tolist(),

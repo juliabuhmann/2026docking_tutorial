@@ -4,15 +4,15 @@ PW.data('index', 'index', {
   {
    "id": "streptavidin",
    "pdb_id": "1STP",
-   "title": "Streptavidin + biotin",
+   "title": "Streptavidin + biotin (a tetramer)",
    "difficulty": "easy",
-   "story": "Streptavidin from <i>Streptomyces</i> grabs the vitamin biotin with a dissociation constant around 10<sup>-14</sup> M, one of the tightest non-covalent interactions known. Biologists exploit it everywhere: tag a molecule with biotin and streptavidin will fish it out. Biotin sits deep inside one end of an eight-stranded \u03b2-barrel.",
-   "caveat": "Streptavidin is a tetramer; in the full assembly a tryptophan from a neighbouring subunit closes the lid. Only one chain is shown here.",
+   "story": "Streptavidin from <i>Streptomyces</i> grabs the vitamin biotin with a dissociation constant around 10<sup>-14</sup> M, one of the tightest non-covalent interactions known. Biologists exploit it everywhere: tag a molecule with biotin and streptavidin will fish it out. Each of the four subunits is an eight-stranded \u03b2-barrel with biotin deep inside one end, and the barrels pack so that a tryptophan of a neighbouring subunit (Trp120) closes over each biotin like a lid: the tight binding is a property of the tetramer, not of one chain.",
+   "caveat": "",
    "story_refs": "",
    "intro": [
     {
      "title": "The protein",
-     "text": "Streptavidin is a small protein from the soil bacterium <i>Streptomyces avidinii</i>. Four copies stick together; here you see one of them. Each copy binds one biotin."
+     "text": "Streptavidin is a protein from the soil bacterium <i>Streptomyces avidinii</i>. Four identical chains (four colours) form a tetramer, as in the living cell, and each chain binds one biotin."
     },
     {
      "title": "The ligand",
@@ -20,7 +20,7 @@ PW.data('index', 'index', {
     },
     {
      "title": "Your tip",
-     "text": "Binding that tight needs a pocket that wraps around the ligand on almost all sides. Look for a deep hole, not a shallow dent."
+     "text": "Binding that tight needs a pocket that wraps around the ligand on almost all sides. There are four equivalent sites: any one of them counts."
     }
    ],
    "ligand_id": "BTN",
@@ -28,7 +28,10 @@ PW.data('index', 'index', {
    "ligand_label": "biotin",
    "n_ligand_atoms": 16,
    "chains": [
-    "A"
+    "A",
+    "B",
+    "C",
+    "D"
    ],
    "resolution": 2.6,
    "citation": {
@@ -407,7 +410,7 @@ PW.data('index', 'index', {
    "ligand_id": "BTN",
    "ligand_name": "BIOTIN",
    "ligand_label": "biotin",
-   "note": "Smallest and fastest to fold.",
+   "note": "Smallest and fastest to fold. In nature a tetramer; one chain is folded here, so the lid that a neighbouring chain puts over biotin (Trp120) is missing.",
    "length": 159
   },
   {

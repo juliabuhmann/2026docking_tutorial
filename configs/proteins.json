@@ -1,24 +1,26 @@
 {
- "_about": "Pocket-hunt levels, ordered from easy to hard. The ligand named here defines the correct pocket. Every entry is fetched from RCSB by scripts/build_data.py. 'receptor_chains' are the chains shown; 'keep_hetero' lists ions kept as part of the protein. 'decoys' are real pockets that are NOT where this ligand binds; they get their own feedback. A decoy is defined either by another ligand in the same entry ('from_ligand') or by residue numbers ('residues') with a source. The structure's own paper is fetched from RCSB ('primary citation'); 'story_refs' only back extra claims in the story text. 'ligand_label' is the short display name; the official CCD name is fetched. 'intro' is a list of short cards ({title, text}) shown before a level starts: what the protein does, what the ligand is, and a tip that does not give the answer away.",
+ "_about": "Pocket-hunt levels, ordered from easy to hard. The ligand named here defines the correct pocket. Every entry is fetched from RCSB by scripts/build_data.py. 'receptor_chains' are the chains shown; 'keep_hetero' lists ions kept as part of the protein. 'decoys' are real pockets that are NOT where this ligand binds; they get their own feedback. A decoy is defined either by another ligand in the same entry ('from_ligand') or by residue numbers ('residues') with a source. The structure's own paper is fetched from RCSB ('primary citation'); 'story_refs' only back extra claims in the story text. 'ligand_label' is the short display name; the official CCD name is fetched. 'intro' is a list of short cards ({title, text}) shown before a level starts: what the protein does, what the ligand is, and a tip that does not give the answer away. 'assembly' builds that biological assembly (from the mmCIF) instead of the deposited chains; the other copies of the ligand then mark equivalent binding sites, which count as correct too.",
  "pocket_residue_cutoff_A": 4.5,
  "levels": [
   {
    "id": "streptavidin",
    "pdb_id": "1STP",
    "receptor_chains": [
-    "A"
+    "A",
+    "B",
+    "C",
+    "D"
    ],
    "ligand_id": "BTN",
    "ligand_chain": "A",
-   "title": "Streptavidin + biotin",
+   "title": "Streptavidin + biotin (a tetramer)",
    "difficulty": "easy",
-   "story": "Streptavidin from <i>Streptomyces</i> grabs the vitamin biotin with a dissociation constant around 10<sup>-14</sup> M, one of the tightest non-covalent interactions known. Biologists exploit it everywhere: tag a molecule with biotin and streptavidin will fish it out. Biotin sits deep inside one end of an eight-stranded β-barrel.",
-   "caveat": "Streptavidin is a tetramer; in the full assembly a tryptophan from a neighbouring subunit closes the lid. Only one chain is shown here.",
+   "story": "Streptavidin from <i>Streptomyces</i> grabs the vitamin biotin with a dissociation constant around 10<sup>-14</sup> M, one of the tightest non-covalent interactions known. Biologists exploit it everywhere: tag a molecule with biotin and streptavidin will fish it out. Each of the four subunits is an eight-stranded β-barrel with biotin deep inside one end, and the barrels pack so that a tryptophan of a neighbouring subunit (Trp120) closes over each biotin like a lid: the tight binding is a property of the tetramer, not of one chain.",
    "ligand_label": "biotin",
    "intro": [
     {
      "title": "The protein",
-     "text": "Streptavidin is a small protein from the soil bacterium <i>Streptomyces avidinii</i>. Four copies stick together; here you see one of them. Each copy binds one biotin."
+     "text": "Streptavidin is a protein from the soil bacterium <i>Streptomyces avidinii</i>. Four identical chains (four colours) form a tetramer, as in the living cell, and each chain binds one biotin."
     },
     {
      "title": "The ligand",
@@ -26,9 +28,10 @@
     },
     {
      "title": "Your tip",
-     "text": "Binding that tight needs a pocket that wraps around the ligand on almost all sides. Look for a deep hole, not a shallow dent."
+     "text": "Binding that tight needs a pocket that wraps around the ligand on almost all sides. There are four equivalent sites: any one of them counts."
     }
-   ]
+   ],
+   "assembly": "1"
   },
   {
    "id": "carbonic_anhydrase",
