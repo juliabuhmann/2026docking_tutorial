@@ -12,7 +12,7 @@ PW.data('index', 'index', {
    "intro": [
     {
      "title": "The protein",
-     "text": "Streptavidin is a small protein from the soil bacterium <i>Streptomyces avidinii</i>. Four copies stick together, and each copy binds one biotin."
+     "text": "Streptavidin is a small protein from the soil bacterium <i>Streptomyces avidinii</i>. Four copies stick together; here you see one of them. Each copy binds one biotin."
     },
     {
      "title": "The ligand",
