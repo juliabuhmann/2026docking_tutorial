@@ -129,9 +129,7 @@
       + (S.ligXyz.length ? t("q2", `Find the <b>first frame</b> where the ligand fits: at most ${FIT_CLASHES} clashes.`,
       f === null ? "It never fits along this straight-line path." : f <= 10
         ? `Already at ${f}%: the open cleft has room for the ligand, it is just too open to count as a pocket. Binding needs the closing, not the space.`
-        : `At ${f}%. Before that the ligand overlaps the protein: a structure from earlier on the path would reject the right answer.`) : "")
-      + `<div class="task"><span class="tick" style="opacity:.4"></span><div><p>You only have the start structure and want to dock this ligand. What could you do?</p>
-        <details class="small"><summary>One answer</summary>Let side chains or loops move during docking, dock into several structures (an ensemble, e.g. from MD or other crystal structures), or predict the complex with a co-folding model (Chapter 5). Slide 32.</details></div></div>`;
+        : `At ${f}%. Before that the ligand overlaps the protein: a structure from earlier on the path would reject the right answer.`) : "");
   }
 
   // endpoint summary, computed once per morph
