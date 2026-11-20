@@ -5,6 +5,7 @@
 
   // Feedback distances (A from the clicked atom to the nearest ligand atom). Feel only.
   const HOT_A = 8, WARM_A = 15;
+  const COLD = "#e8edf7"; // not blue: the protein is
   // Surface view: how far beyond the van der Waals radius a click still counts as on an atom. About
   // the solvent probe radius (1.4 A), which is how far the molecular surface can sit from the atoms.
   const SURF_PICK_PAD_A = 1.2;
@@ -26,6 +27,11 @@
     const v = viewer.getView(), q = [v[4], v[5], v[6], v[7]], out = new Float64Array(xyz.length / 3);
     for (let i = 0; i < out.length; i++) out[i] = quatRotate(q, [xyz[3 * i] + v[0], xyz[3 * i + 1] + v[1], xyz[3 * i + 2] + v[2]])[2];
     return out;
+  }
+  // Unit vector, in model coordinates, pointing from the scene towards the viewer.
+  function viewerAxis(viewer) {
+    const v = viewer.getView(), q = [-v[4], -v[5], -v[6], v[7]]; // inverse rotation
+    return quatRotate(q, [0, 0, 1]);
   }
   function pixelsPerAngstrom(viewer, p) {
     const [a, b] = viewer.modelToScreen([vec(p), { x: p[0] + 1, y: p[1], z: p[2] }]);
@@ -51,19 +57,26 @@
   // ------------------------------------------------------------------ level list
   function unlocked(index, i) {
     if (PW.progress.unlockAll || i === 0) return true;
-    return PW.progress.stars[`hunt:${index.levels[i - 1].id}`] !== undefined;
+    const prev = index.levels[i - 1].id;
+    return PW.progress.stars[`hunt:${prev}`] !== undefined || PW.seen(`revealed:hunt:${prev}`);
   }
 
   function renderLeft(index, cur) {
     const left = $("#left");
     left.innerHTML = `<h3>Pocket hunt</h3>
       <p class="small">Each protein binds a small molecule somewhere. Rotate it, look for a pocket, and <b>click on the protein where you think the ligand sits</b>. First try: ★★★.</p>
-      <div class="levels"></div>
       <h3>Views</h3>
       <div id="hunt-views"></div>
       <div id="hunt-slice"></div>
-      <p class="small muted">Some pockets are buried. Slice into the protein to look inside; you can click on what the slice reveals.</p>`;
-    const list = $(".levels", left);
+      <p class="small muted">Some pockets are buried. Slice into the protein to look inside; you can click on what the slice reveals.</p>
+      <h3>Levels</h3>
+      <div class="levels"></div>`;
+    renderLevels(index, cur);
+  }
+  // the level list alone, so that solving a level does not rebuild the view controls
+  function renderLevels(index, cur) {
+    const list = $("#left .levels");
+    list.innerHTML = "";
     index.levels.forEach((L, i) => {
       const s = PW.progress.stars[`hunt:${L.id}`];
       const open = unlocked(index, i);
@@ -120,7 +133,7 @@
   function drawProbes() {
     S.viewer.removeAllShapes();
     S.probes.forEach((p) => {
-      S.viewer.addSphere({ center: vec(p.xyz), radius: p.ok ? 1.1 : 0.9, color: p.color, opacity: 0.95 });
+      S.viewer.addSphere({ center: vec(p.xyz), radius: p.ok ? 1.5 : 1.3, color: p.color, opacity: 1 });
     });
     if (S.hintPockets) {
       S.hintPockets.forEach((pk, i) => {
@@ -147,14 +160,15 @@
   // ------------------------------------------------------------------ the right panel
   function renderRight() {
     const L = S.level, right = $("#right");
-    const tries = S.tries, maxStars = S.hintLevel >= 3 ? 1 : 3;
+    const tries = S.tries;
+    const reachable = S.hintLevel >= 3 ? 1 : tries === 0 ? 3 : tries + 1 <= 3 ? 2 : 1; // same rule as onPick
     let html = `<h3>Level ${S.i + 1} of ${S.index.levels.length}</h3>
       <div class="big" style="font-size:22px">${esc(L.title)}</div>
       <p class="small muted"><span class="diff ${L.difficulty}">${L.difficulty}</span> &nbsp;PDB <a href="https://www.rcsb.org/structure/${L.pdb_id}" target="_blank" rel="noopener">${L.pdb_id}</a> · ${L.chains.length > 1 ? `${L.chains.length} chains` : "1 chain"} · ${L.resolution ? `${L.resolution} Å` : ""}</p>
       ${L.intro && L.intro.length ? `<button id="hunt-about" class="ghost small"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" style="vertical-align:-2px;margin-right:5px"><circle cx="8" cy="8" r="6.6"/><path d="M8 7v4.4" stroke-linecap="round"/><circle cx="8" cy="4.6" r=".9" fill="currentColor" stroke="none"/></svg>About this protein</button>` : ""}`;
     if (!S.solved && !S.revealed) {
       html += `<div class="box acc"><b>Task:</b> click on the protein where ${esc(L.ligand_label)} binds.
-        <div class="small muted" style="margin-top:4px">Tries so far: <b>${tries}</b>. Solve on the first try for ${stars(maxStars)}${maxStars < 3 ? " (capped by the hint)" : ""}.</div></div>
+        <div class="small muted" style="margin-top:4px">Tries so far: <b>${tries}</b>. ${tries === 0 ? "Solve on the first try for" : "Solve with the next click for"} ${stars(reachable)}${S.hintLevel >= 3 ? " (capped by the hint)" : ""}.</div></div>
         <div id="hunt-log"></div>
         <div class="row"><button id="hunt-hint">Hint ${S.hintLevel + 1 <= 3 ? `(${S.hintLevel + 1}/3)` : ""}</button><button id="hunt-reveal" class="ghost">Show me</button></div>
         <div id="hunt-hints"></div>`;
@@ -211,6 +225,10 @@
   function onPick(i) {
     if (S.solved || S.revealed || i < 0) return;
     const p = [S.atoms.xyz[3 * i], S.atoms.xyz[3 * i + 1], S.atoms.xyz[3 * i + 2]];
+    // the marker goes where the click landed: out of the atom (or surface) towards the viewer
+    const lift = S.mode === "surface" ? S.surfRadii[i] : S.mode === "atoms" ? S.vdwRadii[i] : 0;
+    const toViewer = viewerAxis(S.viewer);
+    const mark = p.map((x, k) => x + toViewer[k] * lift);
     const chain = S.atoms.chain[i], resi = S.atoms.resi[i], resn = S.atoms.resn[i];
     const d = Math.min(...S.ligXyz.map((l) => Pockets.dist(l, p)));
     S.tries++;
@@ -223,9 +241,9 @@
       const key = `hunt:${S.level.id}`;
       PW.progress.stars[key] = Math.max(n, PW.progress.stars[key] || 0);
       PW.save();
-      S.probes.push({ xyz: p, color: "#7ee787", ok: true });
+      S.probes.push({ xyz: mark, color: "#7ee787", ok: true });
       toast(`<b>${where}</b> lines the pocket. ${stars(n)}`, "good");
-      drawProbes(); drawLigand(); styleProtein(); renderRight(); renderLeft(S.index, S.i);
+      drawProbes(); showAnswer(); renderLevels(S.index, S.i);
       return;
     }
     let color, html;
@@ -237,15 +255,26 @@
     } else if (d <= WARM_A) {
       color = "#ffb454"; html = `<b>${where}</b>: warm. ${d.toFixed(0)} Å from the ligand.`;
     } else {
-      color = "#60a5fa"; html = `<b>${where}</b>: cold. ${d.toFixed(0)} Å from the ligand.`;
+      color = COLD; html = `<b>${where}</b>: cold. ${d.toFixed(0)} Å from the ligand.`;
     }
-    S.probes.push({ xyz: p, color, ok: false });
+    S.probes.push({ xyz: mark, color, ok: false });
     S.log.push({ html, color });
     drawProbes(); renderRight();
   }
 
   function reveal() {
     S.revealed = true;
+    PW.markSeen(`revealed:hunt:${S.level.id}`); // unlocks the next level, without stars
+    showAnswer();
+    renderLevels(S.index, S.i);
+  }
+  // Ligand, pocket and zoom. Spheres would hide the ligand, so the Atoms view gives way to the
+  // see-through surface.
+  function showAnswer() {
+    if (S.mode === "atoms") {
+      S.mode = "surface";
+      PW.$$("#hunt-views button").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.v === "surface")));
+    }
     drawLigand(); styleProtein(); renderRight();
     S.viewer.zoomTo({ model: S.model, or: S.prot.pocket_residues.map((r) => ({ chain: r.chain, resi: r.resi })) }, 600);
     applySlice();
@@ -326,7 +355,7 @@
     renderRight();
     bindClicks();
     const legend = el(`<div class="legend-card"><b>Click</b> the protein to probe. <span style="color:#ff8f8f">hot</span> ≤ ${HOT_A} Å,
-      <span style="color:#ffb454">warm</span> ≤ ${WARM_A} Å, <span style="color:#60a5fa">cold</span> further from the ligand.</div>`);
+      <span style="color:#ffb454">warm</span> ≤ ${WARM_A} Å, <span style="color:${COLD}">cold</span> further from the ligand.</div>`);
     $("#stage-overlay").innerHTML = "";
     $("#stage-overlay").appendChild(legend);
     if (!first) intro(false);
