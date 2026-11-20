@@ -108,7 +108,7 @@
     q("dk-naive").textContent = visible ? `${e.naive.toFixed(2)} Å` : "–";
     q("dk-centroid").textContent = visible ? `${e.centroid.toFixed(2)} Å` : "–";
     q("dk-clashes").textContent = e.clashes;
-    q("dk-contacts").textContent = `${e.made} / ${S.prot.ligand.contacts.length}`;
+    q("dk-contacts").textContent = S.show.contacts || S.revealed ? `${e.made} / ${S.prot.ligand.contacts.length}` : "hidden";
     q("dk-gauge").style.width = visible ? `${Math.min(e.sym / GAUGE_MAX_A, 1) * 100}%` : "0";
     const b = q("dk-badge");
     if (!visible) { b.textContent = ""; b.className = "chip"; }
@@ -137,7 +137,11 @@
     refresh();
   }
   function recentre() {
-    S.viewer.zoomTo({ within: { distance: S.cfg.start_offset_A + 9, sel: { model: S.truthModel } } });
+    // Fit the receptor atoms around the pocket. Picked by index: 3Dmol's "within" does not reach across
+    // models, and with it the view fitted only the 9-atom ghost and ended up inside the protein.
+    const r = S.cfg.start_offset_A + 9, index = [];
+    S.recXyz.forEach((q, i) => { if (M.dist(q, S.refCentroid) <= r) index.push(i); });
+    S.viewer.zoomTo({ model: S.recModel, index });
     S.viewer.render();
   }
 
@@ -287,15 +291,24 @@
     $("#dk-history").innerHTML = h.length ? h.map((x, i) => `<tr><td>${i + 1}</td><td>${x.mode}</td><td class="num ${x.sym <= S.cfg.success_rmsd_A ? "yes" : ""}">${x.sym.toFixed(2)}</td><td class="num">${x.naive.toFixed(2)}</td></tr>`).reverse().join("")
       : `<tr><td colspan="4" class="muted">Nothing submitted yet.</td></tr>`;
   }
+  // Stars follow the aids that were switched on, not the mode's name: ticking the ghost in Hard mode
+  // is Easy mode.
+  function earnedStars() {
+    if (S.show.ghost) return MODES.easy.stars;
+    if (S.show.live || S.show.contacts || S.show.pocket) return MODES.medium.stars;
+    return MODES.hard.stars;
+  }
   function submit() {
     const e = evaluate(M.applyPose(S.refXyz, S.pose, S.refCentroid));
     const c = S.cases[S.caseIdx];
     S.history.push({ case: c.level, mode: S.mode, sym: e.sym, naive: e.naive });
-    if (e.sym <= S.cfg.success_rmsd_A) {
-      const n = MODES[S.mode].stars;
+    if (e.sym <= S.cfg.success_rmsd_A && S.revealed) {
+      toast(`${e.sym.toFixed(2)} Å, but the crystal pose was already shown: no stars. Press <b>New start</b> to try again.`, "warn");
+    } else if (e.sym <= S.cfg.success_rmsd_A) {
+      const n = earnedStars();
       PW.progress.docking[c.level] = Math.max(n, PW.progress.docking[c.level] || 0);
       PW.save();
-      toast(`Docked! ${e.sym.toFixed(2)} Å on ${S.mode}. ${stars(n)}${n < 3 ? " Try a harder mode for more stars." : ""}`, "good");
+      toast(`Docked! ${e.sym.toFixed(2)} Å. ${stars(n)}${n < 3 ? " Fewer aids switched on (Show) earn more stars." : ""}`, "good");
       renderLeft();
     } else toast(`${e.sym.toFixed(2)} Å: not yet under ${S.cfg.success_rmsd_A} Å. The crystal pose is now shown in green.`, "warn");
     S.revealed = true;
