@@ -9,6 +9,20 @@ PW.data('index', 'index', {
    "story": "Streptavidin from <i>Streptomyces</i> grabs the vitamin biotin with a dissociation constant around 10<sup>-14</sup> M, one of the tightest non-covalent interactions known. Biologists exploit it everywhere: tag a molecule with biotin and streptavidin will fish it out. Biotin sits deep inside one end of an eight-stranded \u03b2-barrel.",
    "caveat": "Streptavidin is a tetramer; in the full assembly a tryptophan from a neighbouring subunit closes the lid. Only one chain is shown here.",
    "story_refs": "",
+   "intro": [
+    {
+     "title": "The protein",
+     "text": "Streptavidin is a small protein from the soil bacterium <i>Streptomyces avidinii</i>. Four copies stick together, and each copy binds one biotin."
+    },
+    {
+     "title": "The ligand",
+     "text": "Biotin is vitamin B7. Streptavidin holds it with a dissociation constant of about 10<sup>-14</sup> M: one of the strongest non-covalent interactions in nature."
+    },
+    {
+     "title": "Your tip",
+     "text": "Binding that tight needs a pocket that wraps around the ligand on almost all sides. Look for a deep hole, not a shallow dent."
+    }
+   ],
    "ligand_id": "BTN",
    "ligand_name": "BIOTIN",
    "ligand_label": "biotin",
@@ -33,6 +47,20 @@ PW.data('index', 'index', {
    "story": "Carbonic anhydrase turns CO<sub>2</sub> and water into bicarbonate a million times a second. Its active site is a cone about 15 \u00c5 deep with a zinc ion at the bottom. Acetazolamide, a drug against glaucoma and altitude sickness, plugs the cone: its sulfonamide binds straight to the zinc.",
    "caveat": "",
    "story_refs": "",
+   "intro": [
+    {
+     "title": "The protein",
+     "text": "Carbonic anhydrase II turns CO<sub>2</sub> and water into bicarbonate and back, about a million times per second. A zinc ion does the chemistry."
+    },
+    {
+     "title": "The ligand",
+     "text": "Acetazolamide is a drug against glaucoma and altitude sickness. It switches the enzyme off by binding to the catalytic zinc."
+    },
+    {
+     "title": "Your tip",
+     "text": "Enzymes with fast chemistry often have a wide, funnel-shaped active site. Find the biggest funnel on the surface."
+    }
+   ],
    "ligand_id": "AZM",
    "ligand_name": "5-ACETAMIDO-1,3,4-THIADIAZOLE-2-SULFONAMIDE",
    "ligand_label": "acetazolamide",
@@ -57,6 +85,20 @@ PW.data('index', 'index', {
    "story": "HIV protease is built from two identical chains. The active site, with one catalytic Asp25 from each chain, lies exactly at the interface, under two flexible flaps that close over the substrate. Indinavir (Crixivan, 1996) was one of the first drugs designed from a protein structure, and protease inhibitors turned HIV from a death sentence into a chronic disease.",
    "caveat": "",
    "story_refs": "",
+   "intro": [
+    {
+     "title": "The protein",
+     "text": "HIV-1 protease cuts the long viral polyproteins into working pieces; without it, new virus particles cannot mature. It is made of two identical chains, shown in two colours."
+    },
+    {
+     "title": "The ligand",
+     "text": "Indinavir (Crixivan, 1996) mimics the peptide the protease cuts. It was one of the first drugs designed using the 3D structure of its target."
+    },
+    {
+     "title": "Your tip",
+     "text": "Each chain brings half of the active site. Where do the two chains meet?"
+    }
+   ],
    "ligand_id": "MK1",
    "ligand_name": "N-[2(R)-HYDROXY-1(S)-INDANYL]-5-[(2(S)-TERTIARY\nBUTYLAMINOCARBONYL)-4(3-PYRIDYLMETHYL)PIPERAZINO]-4(S)-HYDROXY-2(R)-PHENYLMETHYLPENTANAMIDE",
    "ligand_label": "indinavir",
@@ -82,6 +124,20 @@ PW.data('index', 'index', {
    "story": "Trypsin cuts proteins after lysine and arginine. The reason is a narrow, deep S1 pocket with Asp189 at the bottom that pairs with the positive side chain. Benzamidine is a small mimic of an arginine side chain and blocks exactly that pocket. The protein surface has several grooves; only one is the S1 pocket.",
    "caveat": "",
    "story_refs": "",
+   "intro": [
+    {
+     "title": "The protein",
+     "text": "Trypsin is a digestive enzyme from the pancreas. It cuts proteins right after the positively charged residues lysine and arginine."
+    },
+    {
+     "title": "The ligand",
+     "text": "Benzamidine is a small, positively charged molecule that looks like the end of an arginine side chain. It is a classic trypsin inhibitor."
+    },
+    {
+     "title": "Your tip",
+     "text": "The surface has several grooves. Only one is deep and narrow enough to swallow a long, positive side chain."
+    }
+   ],
    "ligand_id": "BEN",
    "ligand_name": "BENZAMIDINE",
    "ligand_label": "benzamidine",
@@ -106,6 +162,20 @@ PW.data('index', 'index', {
    "story": "Imatinib (Gleevec) blocks the BCR-ABL kinase that drives chronic myeloid leukaemia, and turned it into a manageable disease. Kinases bind ATP in a cleft between two lobes. Imatinib binds there too, but it reaches past the gatekeeper residue into a back pocket that only exists in the inactive \"DFG-out\" shape of the kinase.",
    "caveat": "",
    "story_refs": "",
+   "intro": [
+    {
+     "title": "The protein",
+     "text": "Abl is a tyrosine kinase: it moves a phosphate from ATP onto tyrosines of other proteins. In chronic myeloid leukaemia a chromosome swap fuses it to BCR, and the fusion kinase is always on."
+    },
+    {
+     "title": "The ligand",
+     "text": "Imatinib (Gleevec, 2001) was one of the first targeted cancer drugs. It is a long, flat molecule."
+    },
+    {
+     "title": "Your tip",
+     "text": "Kinases have two lobes. The ATP site is in the cleft between them, and drugs often bind there too."
+    }
+   ],
    "ligand_id": "STI",
    "ligand_name": "4-(4-METHYL-PIPERAZIN-1-YLMETHYL)-N-[4-METHYL-3-(4-PYRIDIN-3-YL-PYRIMIDIN-2-YLAMINO)-PHENYL]-BENZAMIDE",
    "ligand_label": "imatinib",
@@ -130,6 +200,20 @@ PW.data('index', 'index', {
    "story": "Acetylcholinesterase clears the neurotransmitter acetylcholine from synapses. Its active site sits at the bottom of a gorge about 20 \u00c5 deep and only a few \u00c5 wide, lined with aromatic rings. Donepezil (Aricept), an Alzheimer's drug, fills the whole gorge, from the catalytic site at the bottom to a second site at the rim.",
    "caveat": "",
    "story_refs": "",
+   "intro": [
+    {
+     "title": "The protein",
+     "text": "Acetylcholinesterase ends a nerve signal by breaking down the neurotransmitter acetylcholine in the synapse. This one comes from the electric ray <i>Torpedo californica</i>."
+    },
+    {
+     "title": "The ligand",
+     "text": "Donepezil (Aricept) blocks the enzyme, so more acetylcholine stays in the synapse. It is used to treat the symptoms of Alzheimer's disease."
+    },
+    {
+     "title": "Your tip",
+     "text": "The active site is not on the surface. It sits at the bottom of a deep, narrow gorge: look for a hole, not a groove."
+    }
+   ],
    "ligand_id": "E20",
    "ligand_name": "1-BENZYL-4-[(5,6-DIMETHOXY-1-INDANON-2-YL)METHYL]PIPERIDINE",
    "ligand_label": "donepezil",
@@ -154,6 +238,20 @@ PW.data('index', 'index', {
    "story": "The estrogen receptor switches genes on when the hormone estradiol binds. The hormone ends up completely buried in the core of the ligand-binding domain, with helix 12 folding over it like a lid. There is no opening to see from outside: you have to look inside the protein. Drugs such as tamoxifen bind in the same place but stop helix 12 from closing.",
    "caveat": "Low resolution (3.1 \u00c5).",
    "story_refs": "",
+   "intro": [
+    {
+     "title": "The protein",
+     "text": "The estrogen receptor is a transcription factor: when its hormone binds, it changes shape and switches genes on. Shown here is its ligand-binding domain, a bundle of helices."
+    },
+    {
+     "title": "The ligand",
+     "text": "Estradiol is the main female sex hormone: a steroid with four fused rings, almost entirely greasy."
+    },
+    {
+     "title": "Your tip",
+     "text": "From the outside, nothing looks like a pocket. Use the <b>slice</b> slider to look inside the protein."
+    }
+   ],
    "ligand_id": "EST",
    "ligand_name": "ESTRADIOL",
    "ligand_label": "estradiol",
@@ -178,6 +276,20 @@ PW.data('index', 'index', {
    "story": "Brian Matthews' lab replaced leucine 99 of T4 lysozyme with alanine. The missing side chain leaves an empty, completely buried cavity of about 150 \u00c5<sup>3</sup>, and benzene finds its way in. This engineered pocket became a classic test case for docking. The big cleft between the two domains is the real active site that cuts bacterial cell walls, but benzene does not bind there.",
    "caveat": "",
    "story_refs": "Eriksson et al., Nature 1992",
+   "intro": [
+    {
+     "title": "The protein",
+     "text": "T4 lysozyme is an enzyme of the bacteriophage T4 that breaks bacterial cell walls. This is an engineered mutant, L99A: leucine 99 was replaced by the much smaller alanine."
+    },
+    {
+     "title": "The ligand",
+     "text": "Benzene: six carbons and nothing polar. It does not bind the normal protein at all."
+    },
+    {
+     "title": "Your tip",
+     "text": "Removing a big side chain from the core leaves an empty space behind. The obvious cleft may not be the answer; slice into the protein."
+    }
+   ],
    "ligand_id": "BNZ",
    "ligand_name": "BENZENE",
    "ligand_label": "benzene",
@@ -202,6 +314,20 @@ PW.data('index', 'index', {
    "story": "PTP1B switches off insulin signalling, so blocking it was a long-standing goal for diabetes. Its active site is an obvious deep pocket, but it is so positively charged that molecules binding there are too polar to enter cells. Wiesmann and colleagues found a second, allosteric site about 20 \u00c5 away: a compound binding there stops the WPD loop from closing, which shuts the enzyme down.",
    "caveat": "",
    "story_refs": "",
+   "intro": [
+    {
+     "title": "The protein",
+     "text": "PTP1B removes phosphates from tyrosines, for example on the activated insulin receptor, and so switches insulin signalling off. Blocking it was a long-standing goal for diabetes drugs."
+    },
+    {
+     "title": "The ligand",
+     "text": "A small inhibitor found by Wiesmann and colleagues. It does not bind where you would first expect."
+    },
+    {
+     "title": "Your tip",
+     "text": "The active site is an obvious deep pocket. Is it the only place a molecule could bind?"
+    }
+   ],
    "ligand_id": "892",
    "ligand_name": "3-(3,5-DIBROMO-4-HYDROXY-BENZOYL)-2-ETHYL-BENZOFURAN-6-SULFONIC ACID (4-SULFAMOYL-PHENYL)-AMIDE",
    "ligand_label": "the allosteric inhibitor",
@@ -226,6 +352,20 @@ PW.data('index', 'index', {
    "story": "KRAS is mutated in about a quarter of human cancers, and for nearly 40 years it was called undruggable: its surface looked smooth, and its natural ligand GTP binds so tightly that no drug can compete. Then Shokat's lab found a hidden pocket under the switch-II loop that a molecule can reach when it attaches covalently to the mutant Cys12. Sotorasib (AMG 510) uses it and was approved in 2021.",
    "caveat": "Sotorasib is covalently bound to Cys12. The cryptic switch-II pocket is shown here in its drug-bound (open) form.",
    "story_refs": "Ostrem et al., Nature 2013",
+   "intro": [
+    {
+     "title": "The protein",
+     "text": "KRAS is a molecular switch: on with GTP bound, off with GDP. The cancer mutation G12C (glycine 12 to cysteine) keeps it on too much; it is common in lung cancer."
+    },
+    {
+     "title": "The ligand",
+     "text": "Sotorasib (Lumakras, 2021) was the first approved KRAS drug. It forms a covalent bond with the mutant cysteine 12."
+    },
+    {
+     "title": "Your tip",
+     "text": "For almost 40 years nobody found a druggable pocket on KRAS. This one is hidden: look carefully near flexible loops, and slice if needed."
+    }
+   ],
    "ligand_id": "MOV",
    "ligand_name": "AMG 510 (bound form)",
    "ligand_label": "sotorasib",

@@ -457,7 +457,7 @@ def main():
         prot[level["id"]] = d
         write_js(OUT / f"prot_{level['id']}.js", "prot", level["id"], d)
         index["levels"].append({k: level[k] for k in ("id", "pdb_id", "title", "difficulty", "story")} | {
-            "caveat": level.get("caveat", ""), "story_refs": level.get("story_refs", ""),
+            "caveat": level.get("caveat", ""), "story_refs": level.get("story_refs", ""), "intro": level.get("intro", []),
             "ligand_id": level["ligand_id"], "ligand_name": d["ligand_name"], "ligand_label": level["ligand_label"],
             "n_ligand_atoms": len(d["ligand"]["atoms"]), "chains": level["receptor_chains"],
             "resolution": d["resolution"], "citation": d["citation"]})
