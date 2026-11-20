@@ -7,6 +7,7 @@
   const M = window.Metrics;
 
   const GAUGE_MAX_A = 10; // RMSD at which the gauge is full (feel only)
+  const TOUCH_ROT_DEG = 15; // one tap of a rotate button (feel only)
 
   const MODES = {
     easy: { show: { ghost: true, contacts: false, pocket: true, surface: false, live: true }, stars: 1,
@@ -43,9 +44,9 @@
           position: { x: c.partner_xyz[0], y: c.partner_xyz[1], z: c.partner_xyz[2] },
           fontSize: 12, fontColor: "white", backgroundColor: "black", backgroundOpacity: 0.55, inFront: true });
       });
-      S.waterModel.setStyle({}, { sphere: { radius: 0.35, color: "#ff5c5c" } });
-    } else S.waterModel.setStyle({}, {});
-    S.truthModel.setStyle({}, (show.ghost || S.revealed) ? { stick: { radius: 0.2, colorscheme: "greenCarbon", opacity: 0.55 } } : {});
+      if (S.waterModel) S.waterModel.setStyle({}, { sphere: { radius: 0.35, color: "#ff5c5c" } });
+    } else if (S.waterModel) S.waterModel.setStyle({}, {});
+    S.truthModel.setStyle({}, (show.ghost || S.revealed) ? { stick: { radius: 0.22, colorscheme: "greenCarbon", opacity: 0.85 } } : {});
     v.removeAllSurfaces();
     if (show.surface) v.addSurface($3Dmol.SurfaceType.MS, { opacity: 0.6, color: "#e8ecf2" }, { model: rec });
   }
@@ -57,24 +58,31 @@
     S.ligModel.setStyle({}, { stick: { radius: 0.24, colorscheme: "magentaCarbon" } });
     v.removeAllShapes();
     const piv = S.controls && S.controls.pivot; // the atom the ligand is being turned around
-    if (piv) v.addSphere({ center: { x: piv[0], y: piv[1], z: piv[2] }, radius: 0.45, color: "#22d3ee", opacity: 0.9 });
+    if (piv) v.addSphere({ center: { x: piv[0], y: piv[1], z: piv[2] }, radius: 0.7, color: "#22d3ee", opacity: 1 });
     if (S.show.contacts) {
       S.prot.ligand.contacts.forEach((c) => {
-        const p = xyz[c.lig_index], ok = M.dist(p, c.partner_xyz) <= S.cfg.polar_contact_cutoff_A;
+        const p = roleOf(xyz, c.lig_index), ok = M.dist(p, c.partner_xyz) <= S.cfg.polar_contact_cutoff_A;
         v.addCylinder({ start: { x: p[0], y: p[1], z: p[2] }, end: { x: c.partner_xyz[0], y: c.partner_xyz[1], z: c.partner_xyz[2] },
           radius: 0.06, dashed: true, dashLength: 0.25, gapLength: 0.2, color: ok ? "#2ecc71" : "#ffb020", fromCap: 1, toCap: 1 });
       });
     }
   }
 
+  // Position of the pose atom that plays crystal atom k under the best symmetry matching, so that a
+  // flipped symmetric group (two equivalent sulfonamide oxygens) still makes its contacts.
+  function roleOf(xyz, k) {
+    const perm = M.symmetryRmsd(xyz, S.refXyz, S.prot.ligand.automorphisms).perm;
+    const i = perm ? perm.indexOf(k) : k;
+    return xyz[i >= 0 ? i : k];
+  }
   function evaluate(xyz) {
     const L = S.prot.ligand;
     return {
       sym: M.symmetryRmsd(xyz, S.refXyz, L.automorphisms).rmsd,
       naive: M.rmsd(xyz, S.refXyz),
-      made: L.contacts.filter((c) => M.dist(xyz[c.lig_index], c.partner_xyz) <= S.cfg.polar_contact_cutoff_A).length,
+      made: L.contacts.filter((c) => M.dist(roleOf(xyz, c.lig_index), c.partner_xyz) <= S.cfg.polar_contact_cutoff_A).length,
       centroid: M.dist(M.centroid(xyz), S.refCentroid),
-      clashes: M.countClashes(xyz, S.recXyz, S.cfg.clash_cutoff_A),
+      clashes: M.countClashes(xyz, S.clashXyz, S.cfg.clash_cutoff_A),
     };
   }
 
@@ -85,9 +93,10 @@
     q("dk-naive").textContent = visible ? `${e.naive.toFixed(2)} Å` : "–";
     q("dk-centroid").textContent = visible ? `${e.centroid.toFixed(2)} Å` : "–";
     q("dk-clashes").textContent = e.clashes;
-    q("dk-contacts").textContent = S.show.contacts || S.revealed ? `${e.made} / ${S.prot.ligand.contacts.length}` : "hidden";
+    q("dk-contacts").textContent = !S.prot.ligand.contacts.length ? "none in this structure" : S.show.contacts || S.revealed ? `${e.made} / ${S.prot.ligand.contacts.length}` : "hidden";
     q("dk-gauge").style.width = visible ? `${Math.min(e.sym / GAUGE_MAX_A, 1) * 100}%` : "0";
     const b = q("dk-badge");
+    b.style.color = ""; b.style.visibility = visible ? "" : "hidden";
     if (!visible) { b.textContent = ""; b.className = "chip"; }
     else if (e.sym <= ok) { b.textContent = "success"; b.className = "chip yes"; }
     else if (e.sym <= 2 * ok) { b.textContent = "close"; b.className = "chip"; b.style.color = "var(--warn)"; }
@@ -95,7 +104,7 @@
     const card = q("dk-contacts-card");
     card.style.display = (S.show.contacts || S.revealed) && S.prot.ligand.contacts.length ? "" : "none";
     q("dk-contacts-body").innerHTML = S.prot.ligand.contacts.map((c) => {
-      const d = M.dist(xyz[c.lig_index], c.partner_xyz), hit = d <= S.cfg.polar_contact_cutoff_A;
+      const d = M.dist(roleOf(xyz, c.lig_index), c.partner_xyz), hit = d <= S.cfg.polar_contact_cutoff_A;
       return `<tr><td>${esc(c.lig_atom)}</td><td>${esc(c.partner)}<br><span class="muted">${esc(c.kind)}</span></td><td class="num">${c.distance.toFixed(2)}</td><td class="num ${hit ? "yes" : "no"}">${d.toFixed(2)}</td></tr>`;
     }).join("");
   }
@@ -108,16 +117,38 @@
   }
 
   function newStart() {
-    S.revealed = false;
-    S.pose = { R: M.randomRotation(), t: M.scale(S.outward, S.cfg.start_offset_A) };
+    S.revealed = false; S.scored = false;
+    S.aidsUsed = new Set(Object.keys(S.show).filter((k) => S.show[k]));
+    S.pose = startPose();
     applyStaticStyles();
     refresh();
+    recentre();
+  }
+  // The ligand, turned at random, at the nearest clash-free spot at least start_offset_A from the
+  // crystal pose, searched along many directions. (Pushing straight out from the protein's centre
+  // often ended inside the protein, e.g. for the streptavidin tetramer and for imatinib.)
+  const START_DIRECTIONS = 64, START_SEARCH_A = 20;
+  function startPose() {
+    const R = M.randomRotation(), base = M.applyPose(S.refXyz, { R, t: [0, 0, 0] }, S.refCentroid);
+    const reach = S.cfg.start_offset_A + START_SEARCH_A + 15;
+    const near = S.clashXyz.filter((q) => M.dist(q, S.refCentroid) <= reach);
+    let best = null;
+    for (let k = 0; k < START_DIRECTIONS; k++) { // directions spread evenly over a sphere
+      const z = 1 - (2 * k + 1) / START_DIRECTIONS, r = Math.sqrt(1 - z * z), phi = k * Math.PI * (3 - Math.sqrt(5));
+      const dir = [r * Math.cos(phi), r * Math.sin(phi), z];
+      for (let off = S.cfg.start_offset_A; off <= S.cfg.start_offset_A + START_SEARCH_A && (!best || off < best.off); off += 1) {
+        const t = M.scale(dir, off);
+        if (M.countClashes(base.map((p) => M.add(p, t)), near, S.cfg.clash_cutoff_A) === 0) { best = { off, t }; break; }
+      }
+    }
+    return { R, t: best ? best.t : M.scale(S.outward, S.cfg.start_offset_A) };
   }
   function recentre() {
     // Fit the receptor atoms around the pocket. Picked by index: 3Dmol's "within" does not reach across
     // models, and with it the view fitted only the 9-atom ghost and ended up inside the protein.
-    const r = S.cfg.start_offset_A + 9, index = [];
-    S.recXyz.forEach((q, i) => { if (M.dist(q, S.refCentroid) <= r) index.push(i); });
+    // around both the crystal site and the ligand's start, so both are in view
+    const t = S.pose ? S.pose.t : [0, 0, 0], mid = M.add(S.refCentroid, M.scale(t, 0.5)), r = M.norm(t) / 2 + 9, index = [];
+    S.recXyz.forEach((q, i) => { if (M.dist(q, mid) <= r) index.push(i); });
     S.viewer.zoomTo({ model: S.recModel, index });
     S.viewer.render();
   }
@@ -126,7 +157,7 @@
   function bindInput() {
     S.controls = window.LigandControls.attach({
       viewer: PW.view(), el: $("#stage"), M, center: S.refCentroid || [0, 0, 0],
-      getPose: () => S.pose, getXyz: () => S.curXyz, refresh, enabled: () => !!S.pose,
+      getPose: () => S.pose, getXyz: () => S.curXyz, refresh, enabled: () => !!S.pose && !document.getElementById("tour"),
     });
   }
   function unbindInput() {
@@ -170,7 +201,7 @@
     const box = $("#dk-show");
     box.innerHTML = "";
     [["ghost", "Crystal pose (ghost)"], ["contacts", "Key interactions"], ["pocket", "Pocket residues"], ["surface", "Protein surface"], ["live", "Live RMSD"]].forEach(([k, label]) => {
-      box.appendChild(checkbox(label, S.show[k], (v) => { S.show[k] = v; applyStaticStyles(); refresh(); }));
+      box.appendChild(checkbox(label, S.show[k], (v) => { S.show[k] = v; if (v) S.aidsUsed.add(k); applyStaticStyles(); refresh(); }));
     });
     $("#dk-mode-hint").textContent = MODES[S.mode].hint;
   }
@@ -205,7 +236,7 @@
         <p class="small">The RMSD to the crystal pose is a <b>metric</b> for judging a pose, not a score that predicts binding. In plain words: the average distance between each ligand atom and the same atom in the crystal structure.</p>
         <p class="small">RMSD = √(Σ|x<sub>i</sub> − x<sub>i</sub><sup>crystal</sup>|² / N) over the ${L.n_ligand_atoms} heavy atoms. Nothing is superimposed: both poses stay in the protein's frame, so it measures both where the ligand sits and how it is turned.
         Symmetric molecules have several valid atom matchings (${S.prot.ligand.automorphisms.length} here); the headline number takes the best one, the naive one does not.</p>
-        <p class="small">Under ${S.cfg.success_rmsd_A} Å usually counts as a docking success (slide 35). RMSD alone is not enough, though: it does not check clashes, bond geometry or the key interactions, and many poses under ${S.cfg.success_rmsd_A} Å are physically implausible (<a href="https://doi.org/10.1039/D3SC04185A" target="_blank" rel="noopener">PoseBusters: Buttenschoen, Morris &amp; Deane, <i>Chem. Sci.</i> 2024</a>). That is why clashes and contacts are counted too.</p></details>`;
+        <p class="small">Under ${S.cfg.success_rmsd_A} Å usually counts as a docking success (slide 35). For a small ligand that is generous: a benzene with its centre in the right place is under ${S.cfg.success_rmsd_A} Å in almost any orientation. RMSD alone is not enough, though: it does not check clashes, bond geometry or the key interactions, and many poses under ${S.cfg.success_rmsd_A} Å are physically implausible (<a href="https://doi.org/10.1039/D3SC04185A" target="_blank" rel="noopener">PoseBusters: Buttenschoen, Morris &amp; Deane, <i>Chem. Sci.</i> 2024</a>). That is why clashes and contacts are counted too.</p></details>`;
     $("#dk-submit").addEventListener("click", submit);
     renderHistory();
   }
@@ -216,19 +247,24 @@
   }
   // Stars follow the aids that were switched on, not the mode's name: ticking the ghost in Hard mode
   // is Easy mode.
+  // Counted over every aid switched on since New start, so unticking them just before Submit does not help.
   function earnedStars() {
-    if (S.show.ghost) return MODES.easy.stars;
-    if (S.show.live || S.show.contacts || S.show.pocket) return MODES.medium.stars;
+    const used = S.aidsUsed;
+    if (used.has("ghost")) return MODES.easy.stars;
+    if (used.has("live") || used.has("contacts") || used.has("pocket")) return MODES.medium.stars;
     return MODES.hard.stars;
   }
   function submit() {
     const e = evaluate(M.applyPose(S.refXyz, S.pose, S.refCentroid));
     const c = S.cases[S.caseIdx];
     S.history.push({ case: c.level, mode: S.mode, sym: e.sym, naive: e.naive });
-    if (e.sym <= S.cfg.success_rmsd_A && S.revealed) {
+    if (e.sym <= S.cfg.success_rmsd_A && S.scored) {
+      toast(`${e.sym.toFixed(2)} Å. This start is already scored; press <b>New start</b> to try again.`, "good");
+    } else if (e.sym <= S.cfg.success_rmsd_A && S.revealed) {
       toast(`${e.sym.toFixed(2)} Å, but the crystal pose was already shown: no stars. Press <b>New start</b> to try again.`, "warn");
     } else if (e.sym <= S.cfg.success_rmsd_A) {
       const n = earnedStars();
+      S.scored = true;
       PW.progress.docking[c.level] = Math.max(n, PW.progress.docking[c.level] || 0);
       PW.save();
       toast(`Docked! ${e.sym.toFixed(2)} Å. ${stars(n)}${n < 3 ? " Fewer aids switched on (Show) earn more stars." : ""}`, "good");
@@ -250,11 +286,15 @@
     S.refCentroid = M.centroid(S.refXyz);
     unbindInput(); bindInput(); // the controls rotate about this case's ligand centre
     S.recXyz = S.prot.receptor_pdb.split("\n").filter((l) => l.startsWith("ATOM") || l.startsWith("HETATM")).map((l) => [+l.slice(30, 38), +l.slice(38, 46), +l.slice(46, 54)]);
+    // clashes are counted against protein atoms only: a metal coordinating the ligand (the zinc of
+    // carbonic anhydrase, 1.9 A from acetazolamide's N) is a bond, not a clash
+    S.clashXyz = S.prot.receptor_pdb.split("\n").filter((l) => l.startsWith("ATOM")).map((l) => [+l.slice(30, 38), +l.slice(38, 46), +l.slice(46, 54)]);
     S.molLines = S.prot.ligand.molblock.split("\n");
     S.outward = M.normalize(M.sub(S.refCentroid, M.centroid(S.recXyz)));
     S.pocketSel = S.prot.pocket_residues.map((r) => ({ chain: r.chain, resi: r.resi }));
     S.recModel = v.addModel(S.prot.receptor_pdb, "pdb");
-    S.waterModel = v.addModel(S.prot.water_pdb, "pdb");
+    // some structures have no waters near the ligand; an empty model breaks 3Dmol's renderer
+    S.waterModel = /HETATM|ATOM/.test(S.prot.water_pdb) ? v.addModel(S.prot.water_pdb, "pdb") : null;
     S.truthModel = v.addModel(S.prot.ligand.molblock, "sdf");
     S.ligModel = null;
     renderLeft();
@@ -262,7 +302,19 @@
     setMode(S.mode);
     recentre();
     const hint = $("#stage-hint");
-    hint.innerHTML = `<span id="dk-hint"><b>Drag ligand</b> move · <kbd>Shift</kbd>+drag rotate (start on an atom to pivot there) · <b>drag background</b> camera · <kbd>Shift</kbd>+scroll depth · <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>/arrows</span>`;
+    // touch screens have no Shift, right button or keys: rotation buttons instead
+    const touch = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+    hint.innerHTML = touch
+      ? `<span id="dk-hint"><b>Drag ligand</b> move · <b>drag background</b> camera · rotate: <button data-rot="up,-1">◀</button><button data-rot="up,1">▶</button><button data-rot="right,-1">▲</button><button data-rot="right,1">▼</button><button data-rot="toward,1">⟲</button><button data-rot="toward,-1">⟳</button></span>`
+      : `<span id="dk-hint"><b>Drag ligand</b> move · <kbd>Shift</kbd>+drag rotate (start on an atom to pivot there) · <b>drag background</b> camera · <kbd>Shift</kbd>+scroll depth · <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>/arrows</span>`;
+    hint.querySelectorAll("[data-rot]").forEach((btn) => {
+      btn.style.cssText = "pointer-events:auto;padding:2px 9px;margin:0 2px";
+      btn.addEventListener("click", () => {
+        const [axis, sign] = btn.dataset.rot.split(","), B = S.controls.screenBasis();
+        S.controls.rotate(B[axis], (+sign * TOUCH_ROT_DEG * Math.PI) / 180);
+        refresh();
+      });
+    });
     hint.classList.remove("hidden");
   }
 

@@ -359,7 +359,7 @@ window.PW = (function () {
     { title: "A quick tour", text: "A short tour of the controls. <kbd>→</kbd> or <b>Next</b> to continue, <kbd>Esc</kbd> to skip. You can replay it any time with the <b>Tour</b> button at the top." },
     { sel: "#btn-home", title: "Back to the chapters", text: "Returns to the chapter menu. Your progress is kept." },
     { sel: "#hud-title", title: "Where you are", text: "The chapter and the current protein or level." },
-    { sel: "#stage", title: "The 3D view", text: "<b>Drag</b> to rotate, <b>scroll</b> or pinch to zoom, <b>right-drag</b> (or <kbd>Ctrl</kbd>+drag) to move sideways." },
+    { sel: "#stage", title: "The 3D view", text: "<b>Drag</b> to rotate, <b>scroll</b> or pinch to zoom, <b>middle-drag</b> to move sideways (right-drag zooms too)." },
     { sel: "#btn-recentre", title: "Lost the protein?", text: "Re-centres the view." },
     { sel: "#btn-help", title: "Help", text: "How to move the view, if you forget." },
     { sel: "#left", title: "Controls", text: "The left panel holds the levels and settings of each chapter." },
@@ -393,7 +393,7 @@ window.PW = (function () {
     modal(`<h2>Moving around</h2>
       <p><b>Rotate</b>: drag with the left mouse button (one finger on a touchscreen).</p>
       <p><b>Zoom</b>: scroll wheel, or pinch.</p>
-      <p><b>Move the view sideways</b>: drag with the right mouse button, or with <kbd>Ctrl</kbd> held.</p>
+      <p><b>Move the view sideways</b>: drag with the middle mouse button (the wheel). Dragging with the right button zooms.</p>
       <p><b>Re-centre</b>: the target button at the top right.</p>
       <p class="muted small">Chapter-specific controls are explained in the left panel of each chapter.</p>`);
   }
