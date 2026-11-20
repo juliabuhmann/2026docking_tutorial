@@ -136,7 +136,7 @@
       onInput: (v) => { S.playing = false; $("#mo-play").textContent = "▶ Play"; setFrame(v / 100); } });
     $("#mo-slider").appendChild(S.slider);
     $("#mo-play").addEventListener("click", play);
-    $("#mo-color").appendChild(segmented([{ value: "motion", label: "How far it moves" }, { value: "plain", label: "Plain" }], S.colorBy, (v) => { S.colorBy = v; styleProtein(); }));
+    $("#mo-color").appendChild(segmented([{ value: "motion", label: "How far it moves" }, { value: "plain", label: "Plain" }], S.colorBy, (v) => { S.colorBy = v; styleProtein(); const lg = $("#mo-legend"); if (lg) lg.classList.toggle("hidden", v !== "motion"); }));
     $("#mo-show").appendChild(checkbox("Ligand (from the end structure)", S.showLigand, (v) => { S.showLigand = v; styleProtein(); }));
     $("#mo-show").appendChild(checkbox("Surface (slow while playing)", S.showSurface, (v) => { S.showSurface = v; if (!v) S.viewer.removeAllSurfaces(); styleProtein(); }));
 
@@ -182,7 +182,7 @@
     v.zoomTo();
     v.render();
     $("#stage-overlay").innerHTML = "";
-    $("#stage-overlay").appendChild(el(`<div class="legend-card">Colour: how far each atom moves between the two structures.
+    $("#stage-overlay").appendChild(el(`<div class="legend-card${S.colorBy === "motion" ? "" : " hidden"}" id="mo-legend">Colour: how far each atom moves between the two structures.
       <div style="height:8px;border-radius:6px;margin:5px 0 2px;background:linear-gradient(90deg,${dispColor(0)},${dispColor(DISP_MAX_A / 2)},${dispColor(DISP_MAX_A)})"></div>
       <div class="row small" style="margin:0"><span>0 Å</span><span style="flex:1"></span><span>≥ ${DISP_MAX_A} Å</span></div></div>`));
   }

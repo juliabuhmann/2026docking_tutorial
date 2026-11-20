@@ -136,6 +136,7 @@
       console.error(e);
       out.innerHTML = `<div class="box" style="border-color:var(--bad)"><b>Could not compare.</b> <span class="small">${esc(e.message)}</span></div>`;
     }
+    out.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }
 
   function showComparison(pred, res) {

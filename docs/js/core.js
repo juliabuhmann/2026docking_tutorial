@@ -69,11 +69,17 @@ window.PW = (function () {
       box.innerHTML = html + `<div class="row" style="justify-content:flex-end;margin-top:14px">` +
         buttons.map((b, i) => `<button data-i="${i}" class="${b.primary ? "primary" : ""}">${esc(b.label)}</button>`).join("") + `</div>`;
       m.classList.remove("hidden");
-      $$("button[data-i]", box).forEach((b) => b.addEventListener("click", () => {
+      const close = (i) => {
         m.classList.add("hidden");
-        const btn = buttons[+b.dataset.i];
-        resolve(btn.value !== undefined ? btn.value : +b.dataset.i);
-      }));
+        document.removeEventListener("keydown", esc_);
+        const btn = buttons[i];
+        resolve(btn.value !== undefined ? btn.value : i);
+      };
+      // Esc picks the first button (Cancel, or OK when it is the only one)
+      const esc_ = (e) => { if (e.key === "Escape") { e.stopPropagation(); close(0); } };
+      document.addEventListener("keydown", esc_);
+      $$("button[data-i]", box).forEach((b) => b.addEventListener("click", () => close(+b.dataset.i)));
+      $(".primary", box) ? $(".primary", box).focus() : $("button", box).focus();
     });
   }
 
@@ -92,7 +98,7 @@ window.PW = (function () {
   function slider(o) {
     const fmt = o.format || ((v) => `${v}${o.unit || ""}`);
     const s = el(`<div class="slider"><label><span>${o.label}</span><b></b></label>
-      <input type="range" min="${o.min}" max="${o.max}" step="${o.step}" value="${o.value}">
+      <input type="range" aria-label="${esc(String(o.label).replace(/<[^>]+>/g, ""))}" min="${o.min}" max="${o.max}" step="${o.step}" value="${o.value}">
       ${o.why ? `<div class="why">${o.why}</div>` : ""}</div>`);
     const input = $("input", s), out = $("b", s);
     const show = () => { out.textContent = fmt(+input.value); };

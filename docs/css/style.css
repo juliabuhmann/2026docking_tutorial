@@ -1,7 +1,7 @@
 :root {
   --bg: #0b1020; --bg2: #0f1629; --panel: #121a2e; --panel2: #18223a; --panel3: #1f2b47;
   --line: #24304a; --line2: #33436a;
-  --text: #e7ecf6; --dim: #9aa7bf; --mute: #66748f;
+  --text: #e7ecf6; --dim: #9aa7bf; --mute: #7d8aa5;
   --acc: #5eead4; --acc2: #60a5fa; --gold: #ffd166; --good: #7ee787; --bad: #ff8f8f; --warn: #ffb454; --violet: #b69cff; --pink: #ff8fd0;
   --round: ui-rounded, "SF Pro Rounded", "Nunito", "Segoe UI", system-ui, sans-serif;
   --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
