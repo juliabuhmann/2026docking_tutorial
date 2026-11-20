@@ -179,3 +179,7 @@ ol.steps { padding-left: 20px; margin: 6px 0 } ol.steps li { margin: 4px 0 }
   .panel { border: 0 !important; border-top: 1px solid var(--line) !important; padding: 14px 16px 24px }
   .screen#game { position: static }
 }
+pre.algo { font: 11px/1.55 var(--mono); background: var(--bg2); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; overflow-x: auto; color: #cfe8ff; margin: 6px 0 }
+details summary { cursor: pointer; margin: 4px 0 }
+details ul { padding-left: 18px; margin: 4px 0 }
+#cf-scale { font: 11px var(--mono); color: var(--dim); text-align: center }
