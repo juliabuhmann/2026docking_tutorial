@@ -30,7 +30,7 @@ window.PW = (function () {
   }
 
   // ------------------------------------------------------------------ progress (this browser only)
-  const SAVE_KEY = "pocketworks-v1";
+  const SAVE_KEY = "docking-tutorial-v1";
   const progress = { stars: {}, tasks: {}, unlockAll: false, docking: {}, seen: {} };
   try { Object.assign(progress, JSON.parse(localStorage.getItem(SAVE_KEY) || "{}")); } catch (_) { /* storage blocked */ }
   function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(progress)); } catch (_) { /* ignore */ } }
@@ -380,7 +380,7 @@ window.PW = (function () {
     await tour(steps);
   }
   const MENU_TOUR = [
-    { title: "Welcome to Pocketworks", text: "Where does a drug bind, and how would a computer know? A 20-second tour of this page. <kbd>→</kbd> or <b>Next</b> to continue, <kbd>Esc</kbd> to skip." },
+    { title: "Welcome to the docking tutorial", text: "Where does a drug bind, and how would a computer know? A 20-second tour of this page. <kbd>→</kbd> or <b>Next</b> to continue, <kbd>Esc</kbd> to skip." },
     { sel: "#chapter-cards .card", title: "Five chapters", text: "Each card is a chapter. Start with <b>Chapter 1</b>: the later ones build on it. Click a card to play." },
     { sel: "#chapter-cards .card .prog", title: "Your progress", text: "Levels or challenges done in each chapter. Progress is stored in this browser only." },
     { sel: "#btn-unlock", title: "Locked levels", text: "Levels unlock one after another. This button opens them all, e.g. if your teacher wants to jump ahead." },

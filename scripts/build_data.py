@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Build every data file the Pocketworks site loads, from RCSB.
+"""Build every data file the docking tutorial site loads, from RCSB.
 
 Inputs are the four files in configs/. Nothing structural is typed in by hand: PDB entries,
 ligand definitions (CCD), sequences and citations are all downloaded here.

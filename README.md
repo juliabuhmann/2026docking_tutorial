@@ -1,4 +1,4 @@
-# Pocketworks
+# Docking tutorial
 
 A browser game for the ETH Zürich Bioinformatics Concept Course (Protein Bioinformatics II):
 where does a small molecule bind, and how would a computer know? Five chapters, all on real
