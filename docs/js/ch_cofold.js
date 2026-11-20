@@ -16,13 +16,17 @@
   const PLAY_SECONDS = 12;
   const CHAIN_FROM = [86, 132, 230], CHAIN_TO = [196, 140, 255]; // N terminus blue -> C terminus violet
 
+  // The folded chain's protein atoms only: streptavidin's data hold the whole tetramer, but one
+  // chain is folded here (as in the job file).
+  const chainPdb = () => S.prot.receptor_pdb.split("\n").filter((l) => l.startsWith("ATOM") && l[21] === S.cof.chain).join("\n") + "\nEND\n";
+
   function buildSampler(seed) {
     S.illuPlaying = false;
     const v = PW.resetView();
     S.viewer = v; S.view = "illu";
     // the crystal's protein heavy atoms (bonds assigned by 3Dmol from the crystal geometry) and the
     // ligand with its bonds from the CCD: the connectivity is input to the model, not something it finds
-    const protPdb = S.prot.receptor_pdb.split("\n").filter((l) => l.startsWith("ATOM")).join("\n") + "\nEND\n";
+    const protPdb = chainPdb();
     S.allModel = v.addModel(protPdb, "pdb");
     S.ligModel = v.addModel(S.prot.ligand.molblock, "sdf");
     S.protAtoms = S.allModel.selectedAtoms({});
@@ -71,7 +75,7 @@
     S.ligModel.setStyle({}, { stick: { radius: 0.2 * k, colorscheme: "greenCarbon" }, sphere: { radius: 0.42 * k, colorscheme: "greenCarbon" } });
     if (S.ghostModel) { S.viewer.removeModel(S.ghostModel); S.ghostModel = null; }
     if (S.showGhost) { // the oracle's answer, in the display frame: the crystal structure
-      S.ghostModel = S.viewer.addModel(S.prot.receptor_pdb.split("\n").filter((l) => l.startsWith("ATOM")).join("\n") + "\nEND\n", "pdb");
+      S.ghostModel = S.viewer.addModel(chainPdb(), "pdb");
       S.ghostModel.setStyle({}, { cartoon: { style: "trace", color: "#ffffff", opacity: 0.35, thickness: 0.25 } });
     }
   }

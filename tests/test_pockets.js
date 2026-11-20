@@ -12,12 +12,12 @@ const index = load("index.js");
 const prot = {};
 for (const L of index.levels) {
   const d = load(`prot_${L.id}.js`);
-  prot[L.id] = { d, title: L.title, atoms: P.atomsFromPdb(d.receptor_pdb), lig: d.ligand.atoms.map((a) => a.xyz) };
+  prot[L.id] = { d, title: L.title, atoms: P.atomsFromPdb(d.receptor_pdb), lig: d.ligand.atoms.map((a) => a.xyz), sites: P.ligandSites(d) };
 }
 const rank = (id, method, params) => {
   const p = prot[id];
   const res = method === "grid" ? P.gridPockets(p.atoms, params) : P.alphaPockets(p.atoms, p.d.alpha, params);
-  return res.pockets.findIndex((pk) => P.evaluate(pk, p.lig).dcc <= P.DCC_SUCCESS_A) + 1;
+  return res.pockets.findIndex((pk) => P.evaluateSites(pk, p.sites).dcc <= P.DCC_SUCCESS_A) + 1;
 };
 
 // 1. table
@@ -38,7 +38,8 @@ fs.writeFileSync(path.join(__dirname, "out", "pocket_ranks.md"), md);
 console.log(md);
 
 // 2. challenges (ids as in docs/js/ch_algo.js)
-check(rank("streptavidin", "grid", P.GRID_DEFAULTS) === 1, "a1: grid ranks biotin's pocket #1 on streptavidin");
+check(rank("carbonic_anhydrase", "grid", P.GRID_DEFAULTS) === 1, "a1: grid ranks the zinc pocket #1 on carbonic anhydrase");
+check(rank("streptavidin", "grid", P.GRID_DEFAULTS) === 5, "a8: on the streptavidin tetramer the grid's first biotin site is #5 (interface cavities first)");
 check(rank("t4_lysozyme", "grid", P.GRID_DEFAULTS) > 1, "a3 premise: grid by volume does not rank the T4L cavity #1");
 check(rank("t4_lysozyme", "alpha", { ...P.ALPHA_DEFAULTS, score: "apolar" }) === 1, "a3: alpha + hydrophobicity ranks the T4L cavity #1");
 check(rank("carbonic_anhydrase", "alpha", P.ALPHA_DEFAULTS) > 3, "a4 premise: alpha defaults miss the CA zinc pocket");
@@ -48,7 +49,7 @@ check(rank("ptp1b", "alpha", P.ALPHA_DEFAULTS) === 1 && rank("ptp1b", "grid", P.
 check(rank("trypsin", "alpha", { ...P.ALPHA_DEFAULTS, score: "apolar" }) > rank("trypsin", "alpha", P.ALPHA_DEFAULTS), "a6: hydrophobicity score drops trypsin's S1 pocket");
 const best = { ...P.ALPHA_DEFAULTS, rMin: 3.2, score: "apolar" };
 const top1 = Object.keys(prot).filter((id) => rank(id, "alpha", best) === 1).length;
-check(top1 >= 8, `a7: alpha, hydrophobicity, rMin 3.2 reaches ${top1}/10 at rank 1`);
+check(top1 >= 7, `a7: alpha, hydrophobicity, rMin 3.2 reaches ${top1}/10 at rank 1`);
 
 // 3. morphs
 for (const m of index.morphs) {

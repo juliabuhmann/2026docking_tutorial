@@ -5,9 +5,12 @@
   const RANK_COLORS = ["#ffd166", "#5eead4", "#b69cff", "#ff8fd0", "#60a5fa", "#ffb454", "#7ee787", "#ff8f8f"];
 
   const TASKS = [
-    { id: "a1", text: "Run the <b>grid</b> method on <b>streptavidin</b> and tick <b>True ligand</b>. Is biotin's pocket ranked #1?",
-      check: (r) => r.method === "grid" && r.protein === "streptavidin" && r.trueRank === 1 && r.showLigand,
-      answer: "Yes. Biotin's pocket is deep and enclosed, so its grid points are buried in many directions, and it is the biggest pocket on this small protein." },
+    { id: "a1", text: "Run the <b>grid</b> method on <b>carbonic anhydrase</b> and tick <b>True ligand</b>. Is the zinc pocket ranked #1?",
+      check: (r) => r.method === "grid" && r.protein === "carbonic_anhydrase" && r.trueRank === 1 && r.showLigand,
+      answer: "Yes. The active site is a cone about 15 Å deep, so its grid points are buried in many directions, and it is the largest enclosed pocket on the protein." },
+    { id: "a8", text: "<b>Streptavidin</b> is a tetramer. Run the <b>grid</b> method and tick <b>True ligand</b>: the four biotins are not in pockets #1 to #4. Where are those?",
+      check: (r) => r.method === "grid" && r.protein === "streptavidin" && r.trueRank > 1 && r.showLigand,
+      answer: "In the gaps where three of the four subunits meet: enclosed cavities about 13 Å from the nearest biotin, a little bigger than the biotin sites, which follow at #5 to #8. They only exist in the assembled tetramer. A pocket finder sees empty, enclosed space; it cannot tell a void between subunits from a binding site." },
     { id: "a2", text: "Grid method on <b>HIV protease</b>: lower <i>buried directions</i> to 3 or less. What happens to the pockets?",
       check: (r) => r.method === "grid" && r.protein === "hiv_protease" && r.params.minBuried <= 3,
       answer: "Shallow dents on the surface now pass the burial test as well, so pockets grow, merge and multiply. The threshold trades sensitivity for specificity, like the score cut-off of a PSSM." },
@@ -23,9 +26,9 @@
     { id: "a6", text: "<b>Trypsin</b>: switch the alpha-sphere score to <b>hydrophobicity</b>. The S1 pocket drops. Why?",
       check: (r) => r.protein === "trypsin" && r.method === "alpha" && r.params.score === "apolar",
       answer: "S1 is made to bind a positive arginine: Asp189, Ser190 and backbone oxygens line it. A hydrophobicity score assumes drug pockets are greasy, which is often true but not here. Every descriptor carries an assumption." },
-    { id: "a7", text: "<b>Benchmark</b> your settings on all ten proteins (button below the table). Can you reach <b>8 of 10 at rank 1</b>?",
-      check: (r) => r.benchmarkTop1 >= 8,
-      answer: "One way: alpha spheres, hydrophobicity score, smallest sphere about 3.2 Å. No setting here reaches 10/10: a score that wins on greasy pockets loses on polar ones such as trypsin's S1. And because you tuned on these same ten proteins, 8/10 is an optimistic estimate. A fair test needs proteins you did not tune on (slide 29: positives, negatives and a held-out set)." },
+    { id: "a7", text: "<b>Benchmark</b> your settings on all ten proteins (button below the table). Can you reach <b>7 of 10 at rank 1</b>?",
+      check: (r) => r.benchmarkTop1 >= 7,
+      answer: "One way: alpha spheres, hydrophobicity score, smallest sphere about 3.2 Å. No setting here reaches 10/10: a score that wins on greasy pockets loses on polar ones such as trypsin's S1. And because you tuned on these same ten proteins, 7/10 is an optimistic estimate. A fair test needs proteins you did not tune on (slide 29: positives, negatives and a held-out set)." },
   ];
 
   let S = null;
@@ -183,7 +186,7 @@
     const p = { ...S.params, showBuried: S.method === "grid" && S.showRaw ? 3 : 0 };
     S.result = S.method === "grid" ? Pockets.gridPockets(S.atoms, p) : Pockets.alphaPockets(S.atoms, S.prot.alpha, p);
     S.ms = performance.now() - t0;
-    S.evals = S.result.pockets.map((pk) => Pockets.evaluate(pk, S.ligXyz));
+    S.evals = S.result.pockets.map((pk) => Pockets.evaluateSites(pk, S.sites));
     const k = S.evals.findIndex((e) => e.dcc <= Pockets.DCC_SUCCESS_A);
     S.trueRank = k >= 0 ? k + 1 : 0;
     S.bench = null; // a benchmark of other settings would be stale
@@ -206,11 +209,8 @@
       S.model.setStyle({}, { cartoon: { color: "#b8c4dc", opacity: 0.72 } });
     }
     S.model.setStyle({ hetflag: true }, { sphere: { color: "#c0c7d4", scale: 0.8 } });
-    if (S.ligModel) { v.removeModel(S.ligModel); S.ligModel = null; }
-    if (S.showLigand) {
-      S.ligModel = v.addModel(S.prot.ligand.molblock, "sdf");
-      S.ligModel.setStyle({}, { stick: { radius: 0.24, colorscheme: "greenCarbon" } });
-    }
+    (S.ligModels || []).forEach((m) => v.removeModel(m));
+    S.ligModels = S.showLigand ? PW.addLigands(v, S.prot, { stick: { radius: 0.24, colorscheme: "greenCarbon" } }) : [];
     if (S.showRaw && S.method === "grid" && S.result.buriedPoints) {
       const col = { 3: "#2f4675", 4: "#3b5f9e", 5: "#5585cc", 6: "#8bb6f2", 7: "#d6e8ff" };
       for (let b = 3; b <= 7; b++) dots(S.result.buriedPoints.filter((q) => q[3] === b), col[b], 0.16, 0.9);
@@ -267,9 +267,9 @@
     for (const L of S.index.levels) {
       const d = await PW.get("prot", L.id);
       const atoms = Pockets.atomsFromPdb(d.receptor_pdb);
-      const lig = d.ligand.atoms.map((a) => a.xyz);
+      const sites = Pockets.ligandSites(d);
       const res = S.method === "grid" ? Pockets.gridPockets(atoms, S.params) : Pockets.alphaPockets(atoms, d.alpha, S.params);
-      const k = res.pockets.findIndex((pk) => Pockets.evaluate(pk, lig).dcc <= Pockets.DCC_SUCCESS_A);
+      const k = res.pockets.findIndex((pk) => Pockets.evaluateSites(pk, sites).dcc <= Pockets.DCC_SUCCESS_A);
       rows.push({ title: L.title, rank: k >= 0 ? k + 1 : 0 });
       await new Promise((r) => setTimeout(r, 0));
     }
@@ -315,8 +315,9 @@
     S.viewer = PW.resetView();
     S.atoms = Pockets.atomsFromPdb(S.prot.receptor_pdb);
     S.ligXyz = S.prot.ligand.atoms.map((a) => a.xyz);
+    S.sites = Pockets.ligandSites(S.prot);
     S.model = S.viewer.addModel(S.prot.receptor_pdb, "pdb");
-    S.ligModel = null; S.surf = null;
+    S.ligModels = []; S.surf = null;
     S.viewer.zoomTo();
     S.bench = null;
     run();
@@ -349,7 +350,7 @@
       { sel: "#algo-score", title: "Ranking", text: "Which property decides pocket #1." },
       { sel: "#algo-show", title: "Check yourself", text: "<b>True ligand</b> shows where the drug really binds." },
       { sel: "#right table", title: "The ranking", text: "Pockets by rank, with their distance to the true ligand (DCC). A ✓ marks the correct one." },
-      { sel: "#algo-tasks", title: "Challenges", text: "Seven questions. They tick themselves when you reach the right setting, and then show the explanation." },
+      { sel: "#algo-tasks", title: "Challenges", text: "Eight questions. They tick themselves when you reach the right setting, and then show the explanation." },
     ],
     leave() { S = null; },
     recentre() { if (S) { S.viewer.zoomTo(); S.viewer.render(); } },

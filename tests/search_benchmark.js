@@ -2,8 +2,8 @@
 // Used to set a reachable target for the Chapter 2 benchmark challenge.
 const P = require("../docs/js/pockets.js"), { load } = require("./load_data.js");
 const index = load("index.js");
-const prots = index.levels.map((L) => { const d = load(`prot_${L.id}.js`); return { id: L.id, d, atoms: P.atomsFromPdb(d.receptor_pdb), lig: d.ligand.atoms.map((a) => a.xyz) }; });
-const top1 = (fn) => prots.filter((p) => { const r = fn(p); return r.pockets.length && P.evaluate(r.pockets[0], p.lig).dcc <= P.DCC_SUCCESS_A; }).map((p) => p.id);
+const prots = index.levels.map((L) => { const d = load(`prot_${L.id}.js`); return { id: L.id, d, atoms: P.atomsFromPdb(d.receptor_pdb), lig: d.ligand.atoms.map((a) => a.xyz), sites: P.ligandSites(d) }; });
+const top1 = (fn) => prots.filter((p) => { const r = fn(p); return r.pockets.length && P.evaluateSites(r.pockets[0], p.sites).dcc <= P.DCC_SUCCESS_A; }).map((p) => p.id);
 let best = [];
 for (const score of ["size", "apolar", "buriedness"]) for (const rMin of [2.8, 3.0, 3.2, 3.4, 3.6]) for (const rMax of [5.5, 6.2, 7, 8])
   for (const linkDist of [1.6, 2.0, 2.5, 3.0]) for (const minSpheres of [5, 10, 20]) {

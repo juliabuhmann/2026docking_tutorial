@@ -157,6 +157,18 @@ window.PW = (function () {
     };
   }
 
+  // The ligand's molblock moved to other coordinates (same atom order).
+  function molblockAt(molblock, xyz) {
+    const lines = molblock.split("\n");
+    xyz.forEach((p, i) => { lines[4 + i] = p.map((c) => c.toFixed(4).padStart(10)).join("") + lines[4 + i].slice(30); });
+    return lines.join("\n");
+  }
+  // The ligand plus, in a biological assembly, its copies at the equivalent sites. Returns the models.
+  function addLigands(v, prot, style) {
+    return [prot.ligand.molblock, ...(prot.equivalent_sites || []).map((s) => molblockAt(prot.ligand.molblock, s.xyz))]
+      .map((mb) => { const m = v.addModel(mb, "sdf"); m.setStyle({}, style); return m; });
+  }
+
   // ------------------------------------------------------------------ "seen" flags (tours, intros)
   const seen = (key) => !!progress.seen[key];
   function markSeen(key) { progress.seen[key] = true; save(); }
@@ -396,7 +408,7 @@ window.PW = (function () {
   return {
     data, get, loadScript, progress, save, resetProgress,
     $, $$, esc, el, stars, citation, toast, modal, segmented, slider, checkbox,
-    view, resetView, vec, dots, surface, seen, markSeen, tour, menuTour, cards, closeCards,
+    view, resetView, vec, dots, surface, molblockAt, addLigands, seen, markSeen, tour, menuTour, cards, closeCards,
     chapter, chapters, open, setArg, home, setHud, boot,
     get current() { return current; },
   };

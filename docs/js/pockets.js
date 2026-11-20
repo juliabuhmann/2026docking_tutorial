@@ -223,6 +223,16 @@
     return { dcc, coverage: covered / ligandXyz.length };
   }
 
+  // Every copy of the ligand in the structure: the reference one, then the equivalent sites of a
+  // biological assembly (streptavidin's four biotins). A pocket at any of them is a correct find.
+  function ligandSites(prot) {
+    return [prot.ligand.atoms.map((a) => a.xyz), ...(prot.equivalent_sites || []).map((s) => s.xyz)];
+  }
+  // evaluate() against the closest site
+  function evaluateSites(pocket, sites) {
+    return sites.map((xyz) => evaluate(pocket, xyz)).reduce((a, b) => (b.dcc < a.dcc ? b : a));
+  }
+
   // Defaults chosen with tests/explore_pockets.js on the ten Pocket-hunt proteins (see README).
   const GRID_DEFAULTS = { spacing: 1.0, probe: 1.2, maxScan: 8, minBuried: 6, minVolume: 30, score: "size" };
   // rMin/rMax are fpocket's default alpha-sphere radius limits (3.4 and 6.2 A).
@@ -230,7 +240,7 @@
   // A pocket counts as found when its centre is within 4 A of the ligand centre (DCC).
   const DCC_SUCCESS_A = 4;
 
-  const api = { GRID_DEFAULTS, ALPHA_DEFAULTS, DCC_SUCCESS_A, VDW, vdw, DIRS, atomsFromPdb, centroid, dist, hashPoints, gridPockets, alphaPockets, evaluate };
+  const api = { GRID_DEFAULTS, ALPHA_DEFAULTS, DCC_SUCCESS_A, VDW, vdw, DIRS, atomsFromPdb, centroid, dist, hashPoints, gridPockets, alphaPockets, evaluate, ligandSites, evaluateSites };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.Pockets = api;
 })(typeof window !== "undefined" ? window : this);

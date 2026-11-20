@@ -115,7 +115,7 @@
     });
     if (S.mode !== "surface" || atomsToo) m.setStyle({ hetflag: true }, { sphere: { color: "#c0c7d4", scale: 0.9 } });
     if (shown && S.mode !== "atoms") {
-      S.prot.pocket_residues.forEach((r) => {
+      S.allPocket.forEach((r) => {
         m.setStyle({ chain: r.chain, resi: r.resi }, { stick: { radius: 0.18, colorscheme: "whiteCarbon" } }, true);
       });
     }
@@ -123,11 +123,10 @@
   }
 
   function drawLigand() {
-    if (S.ligModel) S.viewer.removeModel(S.ligModel);
-    S.ligModel = null;
+    (S.ligModels || []).forEach((m) => S.viewer.removeModel(m));
+    S.ligModels = [];
     if (!(S.solved || S.revealed)) return;
-    S.ligModel = S.viewer.addModel(S.prot.ligand.molblock, "sdf");
-    S.ligModel.setStyle({}, { stick: { radius: 0.28, colorscheme: "greenCarbon" }, sphere: { scale: 0.25, colorscheme: "greenCarbon" } });
+    S.ligModels = PW.addLigands(S.viewer, S.prot, { stick: { radius: 0.28, colorscheme: "greenCarbon" }, sphere: { scale: 0.25, colorscheme: "greenCarbon" } });
   }
 
   function drawProbes() {
@@ -231,8 +230,10 @@
     const mark = p.map((x, k) => x + toViewer[k] * lift);
     const chain = S.atoms.chain[i], resi = S.atoms.resi[i], resn = S.atoms.resn[i];
     const d = Math.min(...S.ligXyz.map((l) => Pockets.dist(l, p)));
+    const hit = S.sites.findIndex((st) => st.residues.some((r) => r.chain === chain && r.resi === resi));
     S.tries++;
-    const inPocket = S.pocketKeys.has(`${chain}:${resi}`);
+    const inPocket = hit >= 0;
+    if (inPocket) S.foundSite = hit;
     const decoy = S.prot.decoys.find((dc) => dc.residues.some((r) => r.chain === chain && r.resi === resi));
     const where = `${resn} ${resi}${S.level.chains.length > 1 ? ` (chain ${chain})` : ""}`;
     if (inPocket) {
@@ -276,7 +277,9 @@
       PW.$$("#hunt-views button").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.v === "surface")));
     }
     drawLigand(); styleProtein(); renderRight();
-    S.viewer.zoomTo({ model: S.model, or: S.prot.pocket_residues.map((r) => ({ chain: r.chain, resi: r.resi })) }, 600);
+    // the site that was clicked (an assembly has several equivalent ones), else the reference site
+    const site = S.sites[S.foundSite || 0];
+    S.viewer.zoomTo({ model: S.model, or: site.residues.map((r) => ({ chain: r.chain, resi: r.resi })) }, 600);
     applySlice();
   }
 
@@ -315,8 +318,9 @@
     S = {
       index, i, level: L, prot, viewer, atoms,
       model: viewer.addModel(prot.receptor_pdb, "pdb"),
-      ligXyz: prot.ligand.atoms.map((a) => a.xyz),
-      pocketKeys: new Set(prot.pocket_residues.map((r) => `${r.chain}:${r.resi}`)),
+      // every copy of the ligand counts: streptavidin, a tetramer, has four equivalent biotin sites
+      sites: [{ residues: prot.pocket_residues, xyz: prot.ligand.atoms.map((a) => a.xyz) }, ...(prot.equivalent_sites || [])],
+      ligModels: [],
       vdwRadii: atoms.elem.map(Pockets.vdw),
       // in cartoon view the backbone is what you see; accept clicks within 2.2 A of any atom
       cartoonRadii: atoms.elem.map(() => 2.2),
@@ -324,8 +328,11 @@
       surfRadii: atoms.elem.map((e) => Pockets.vdw(e) + SURF_PICK_PAD_A),
       surf: null,
       mode: S ? S.mode : "surface", slice: 0, cutDepth: Infinity,
-      tries: 0, probes: [], log: [], hintLevel: 0, hintPockets: null, solved: false, revealed: false, ligModel: null,
+      tries: 0, probes: [], log: [], hintLevel: 0, hintPockets: null, solved: false, revealed: false, foundSite: 0,
     };
+    S.ligXyz = S.sites.flatMap((st) => st.xyz); // hot/cold: distance to the nearest copy
+    S.allPocket = S.sites.flatMap((st) => st.residues);
+    S.pocketKeys = new Set(S.allPocket.map((r) => `${r.chain}:${r.resi}`));
     // radius of the protein around its centre, for the slice slider
     const pts = [];
     for (let a = 0; a < atoms.n; a++) pts.push([atoms.xyz[3 * a], atoms.xyz[3 * a + 1], atoms.xyz[3 * a + 2]]);
