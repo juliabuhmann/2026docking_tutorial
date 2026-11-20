@@ -30,16 +30,102 @@
 
   let S = null;
 
+  // ------------------------------------------------------------------ intro: the two ideas in 2D
+  // Illustrations only: a toy U-shaped "protein" of circles, with the grid and alpha-sphere ideas
+  // actually computed on it (ray casting and empty circumcircles), so the pictures are honest.
+  const TOY = (() => {
+    const atoms = [], r = 9, cx = 318, cy = 128;
+    // the right wall is lower, so the mouth of the pocket opens into solvent
+    const arm = (x, y0) => { for (let y = y0; y < cy; y += 15) atoms.push([x, y]); };
+    arm(cx - 36, 23); arm(cx - 52, 23); arm(cx + 36, 83); arm(cx + 52, 83);
+    for (let k = 0; k <= 6; k++) { const a = Math.PI * (k / 6); atoms.push([cx - 36 * Math.cos(a), cy + 36 * Math.sin(a)]); }
+    for (let k = 0; k <= 9; k++) { const a = Math.PI * (k / 9); atoms.push([cx - 52 * Math.cos(a), cy + 52 * Math.sin(a)]); }
+    return { atoms, r };
+  })();
+  const inAtom = (x, y, pad = 0) => TOY.atoms.some(([ax, ay]) => (ax - x) ** 2 + (ay - y) ** 2 < (TOY.r + pad) ** 2);
+  const atomSvg = (fill = "#1f3a5c", stroke = "#8fb8ff") => TOY.atoms.map(([x, y]) =>
+    `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${TOY.r}" fill="${fill}" stroke="${stroke}" stroke-width="1.2"/>`).join("");
+  const art = (body) => `<svg viewBox="0 0 440 196" xmlns="http://www.w3.org/2000/svg" font-family="ui-monospace,monospace">${body}</svg>`;
+
+  function gridArt() {
+    const D = [[1, 0], [0, 1], [1, 1], [1, -1]].map(([x, y]) => { const n = Math.hypot(x, y); return [x / n, y / n]; });
+    const hits = (x, y, dx, dy) => { for (let t = 4; t < 120; t += 3) if (inAtom(x + dx * t, y + dy * t)) return true; return false; };
+    const buried = (x, y) => D.filter(([dx, dy]) => hits(x, y, dx, dy) && hits(x, y, -dx, -dy)).length;
+    let pts = "";
+    for (let x = 222; x <= 420; x += 12) for (let y = 14; y <= 190; y += 12) {
+      if (inAtom(x, y, 2)) continue;
+      const b = buried(x, y);
+      pts += `<circle cx="${x}" cy="${y}" r="${b >= 3 ? 3.2 : 1.6}" fill="${b >= 3 ? "#ffd166" : b >= 1 ? "#3b5f9e" : "#2a3858"}"/>`;
+    }
+    // one example point in the cleft, with its four scan lines
+    const [px, py] = [318, 104];
+    let rays = "";
+    D.forEach(([dx, dy]) => {
+      const ok = hits(px, py, dx, dy) && hits(px, py, -dx, -dy);
+      rays += `<path d="M${px - dx * 84} ${py - dy * 84} L${px + dx * 84} ${py + dy * 84}" stroke="${ok ? "#5eead4" : "#ff8f8f"}" stroke-width="1.6" ${ok ? "" : `stroke-dasharray="4 4"`} opacity=".9"/>`;
+    });
+    return art(`${pts}${atomSvg()}${rays}<circle cx="${px}" cy="${py}" r="5" fill="#5eead4"/>
+      <g font-size="12"><text x="16" y="62" fill="#ffd166">● buried in ≥ 3 of 4</text><text x="30" y="78" fill="#ffd166">directions: pocket</text>
+      <text x="16" y="106" fill="#5eead4">— protein on both sides</text>
+      <text x="16" y="130" fill="#ff8f8f">- - escapes to solvent</text></g>`);
+  }
+
+  function alphaArt() {
+    const A = TOY.atoms, out = [];
+    for (let i = 0; i < A.length; i++) for (let j = i + 1; j < A.length; j++) for (let k = j + 1; k < A.length; k++) {
+      const [ax, ay] = A[i], [bx, by] = A[j], [cx, cy] = A[k];
+      const d = 2 * (ax * (by - cy) + bx * (cy - ay) + cx * (ay - by));
+      if (Math.abs(d) < 1e-6) continue;
+      const ux = ((ax * ax + ay * ay) * (by - cy) + (bx * bx + by * by) * (cy - ay) + (cx * cx + cy * cy) * (ay - by)) / d;
+      const uy = ((ax * ax + ay * ay) * (cx - bx) + (bx * bx + by * by) * (ax - cx) + (cx * cx + cy * cy) * (bx - ax)) / d;
+      const R = Math.hypot(ax - ux, ay - uy);
+      if (A.some(([x, y], m) => m !== i && m !== j && m !== k && Math.hypot(x - ux, y - uy) < R - 1e-6)) continue; // not empty
+      out.push([ux, uy, R - TOY.r]);
+    }
+    const cls = (r) => (r < 6 ? "#4d7cff" : r <= 30 ? "#ffd166" : "#ff6b6b");
+    const circles = out.filter((c) => c[2] > 0 && c[2] < 140 && c[0] > 200 && c[0] < 440 && c[1] > -150 && c[1] < 200)
+      .map(([x, y, r]) => `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r.toFixed(1)}" fill="none" stroke="${cls(r)}" stroke-width="1.2" opacity="${r <= 30 && r >= 6 ? 0.95 : 0.5}"/>
+        <circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2.2" fill="${cls(r)}"/>`).join("");
+    return art(`${atomSvg("#1f3a5c", "#557ab8")}${circles}
+      <g font-size="12"><text x="16" y="62" fill="#4d7cff">○ too small: packed protein</text>
+      <text x="16" y="88" fill="#ffd166">○ medium: pocket</text>
+      <text x="16" y="114" fill="#ff6b6b">○ too big: open solvent</text></g>`);
+  }
+
+  function rankArt() {
+    const bars = [["#1", 0.92, "#ffd166"], ["#2", 0.64, "#5eead4"], ["#3", 0.41, "#b69cff"], ["#4", 0.22, "#ff8fd0"]];
+    return art(bars.map(([t, f, c], i) => `<text x="40" y="${48 + i * 34}" fill="${c}" font-size="14" font-weight="700">${t}</text>
+      <rect x="80" y="${34 + i * 34}" width="${(f * 280).toFixed(0)}" height="18" rx="6" fill="${c}" opacity=".85"/>`).join("") +
+      `<text x="80" y="184" fill="#66748f" font-size="11">score: volume, burial or hydrophobicity</text>`);
+  }
+
+  function intro(force) {
+    if (!force && PW.seen("intro:algo")) return Promise.resolve();
+    PW.markSeen("intro:algo");
+    const G = Pockets.GRID_DEFAULTS, A = Pockets.ALPHA_DEFAULTS;
+    return PW.cards([
+      { kicker: "Pocket algorithms · 1/4", title: "Why ask a computer?",
+        html: `In Chapter 1 you found pockets by eye. For thousands of structures, from the PDB or from AlphaFold, we need an algorithm: <b>atom coordinates in, a ranked list of candidate pockets out</b>. Here are two classic ideas, live on the same ten proteins.` },
+      { kicker: "Pocket algorithms · 2/4", title: "Idea 1: a grid (LIGSITE)", art: gridArt(),
+        html: `Lay a grid over the protein and keep the points that fall between atoms. From each point, look along fixed lines. If protein lies on <b>both sides</b>, the point is buried in that direction. Points buried in many directions (default ≥ ${G.minBuried} of 7 in 3D) are pocket; neighbours are clustered into pockets.` },
+      { kicker: "Pocket algorithms · 3/4", title: "Idea 2: alpha spheres (fpocket)", art: alphaArt(),
+        html: `Find every empty sphere that touches four atom centres (three in this 2D sketch) with no atom inside: the Delaunay triangulation gives them all. <b>Small</b> ones sit inside the packed protein, <b>huge</b> ones in open water. The <b>medium</b> ones (default ${A.rMin}–${A.rMax} Å) mark pockets; nearby ones are clustered.` },
+      { kicker: "Pocket algorithms · 4/4", title: "Which pocket is #1?", art: rankArt(),
+        html: `Both methods return many candidates, so a <b>score</b> ranks them. Your job: change the parameters and the score, tick <b>True ligand</b> to check, and solve the challenges on the right. No setting wins on every protein.` },
+    ], { done: S && S.started ? "Close" : "Let's go" });
+  }
+
   function defaultsFor(method) { return { ...(method === "grid" ? Pockets.GRID_DEFAULTS : Pockets.ALPHA_DEFAULTS) }; }
 
   // ------------------------------------------------------------------ left panel
   function renderLeft() {
     const left = $("#left");
-    left.innerHTML = `<h3>Protein</h3><select id="algo-prot" style="width:100%;padding:7px;border-radius:10px;background:var(--panel2);color:var(--text);border:1px solid var(--line)"></select>
+    left.innerHTML = `<button id="algo-intro" class="ghost small" style="margin-bottom:6px"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" style="vertical-align:-2px;margin-right:5px"><circle cx="8" cy="8" r="6.6"/><path d="M8 7v4.4" stroke-linecap="round"/><circle cx="8" cy="4.6" r=".9" fill="currentColor" stroke="none"/></svg>How do these methods work?</button>
+      <h3>Protein</h3><select id="algo-prot" style="width:100%;padding:7px;border-radius:10px;background:var(--panel2);color:var(--text);border:1px solid var(--line)"></select>
       <h3>Method</h3><div id="algo-method"></div><p class="small muted" id="algo-method-why"></p>
       <h3>Parameters</h3><div id="algo-params"></div>
       <h3>Score used for ranking</h3><div id="algo-score"></div>
-      <h3>Show</h3><div id="algo-show"></div>
+      <h3>Show</h3><div id="algo-view"></div><div id="algo-show"></div>
       <div class="row"><button id="algo-defaults" class="ghost">Reset to defaults</button></div>`;
     const sel = $("#algo-prot");
     S.index.levels.forEach((L) => sel.appendChild(el(`<option value="${L.id}">${esc(L.title)}</option>`)));
@@ -48,6 +134,10 @@
     $("#algo-method").appendChild(segmented([{ value: "grid", label: "Grid", title: "LIGSITE-like" }, { value: "alpha", label: "Alpha spheres", title: "fpocket-like" }], S.method, (m) => {
       S.method = m; S.params = defaultsFor(m); renderParams(); run();
     }));
+    $("#algo-intro").addEventListener("click", () => intro(true));
+    $("#algo-view").appendChild(segmented([
+      { value: "cartoon", label: "Cartoon", title: "The fold, see-through so the pockets show" },
+      { value: "surface", label: "Surface", title: "See-through molecular surface: the shape a ligand sees" }], S.view, (m) => { S.view = m; draw(); }));
     $("#algo-defaults").addEventListener("click", () => { S.params = defaultsFor(S.method); renderParams(); run(); });
     renderParams();
   }
@@ -107,7 +197,13 @@
     (S.dotModels || []).forEach((m) => v.removeModel(m));
     S.dotModels = [];
     const dots = (pts, col, r, op) => { if (pts.length) S.dotModels.push(PW.dots(v, pts, col, r, op)); };
-    S.model.setStyle({}, { cartoon: { color: "#b8c4dc", opacity: 0.72 } });
+    if (S.view === "surface") {
+      S.model.setStyle({}, {});
+      if (!S.surf) S.surf = PW.surface(v, S.model, () => "#c3cee3", 0.45);
+    } else {
+      if (S.surf) { S.surf.remove(); S.surf = null; }
+      S.model.setStyle({}, { cartoon: { color: "#b8c4dc", opacity: 0.72 } });
+    }
     S.model.setStyle({ hetflag: true }, { sphere: { color: "#c0c7d4", scale: 0.8 } });
     if (S.ligModel) { v.removeModel(S.ligModel); S.ligModel = null; }
     if (S.showLigand) {
@@ -218,7 +314,7 @@
     S.atoms = Pockets.atomsFromPdb(S.prot.receptor_pdb);
     S.ligXyz = S.prot.ligand.atoms.map((a) => a.xyz);
     S.model = S.viewer.addModel(S.prot.receptor_pdb, "pdb");
-    S.ligModel = null;
+    S.ligModel = null; S.surf = null;
     S.viewer.zoomTo();
     S.bench = null;
     run();
@@ -237,11 +333,22 @@
     },
     async enter(arg) {
       const index = await PW.get("index", "index");
-      S = { index, method: "grid", params: defaultsFor("grid"), showLigand: false, showRaw: false, fullSpheres: false };
+      S = { index, method: "grid", params: defaultsFor("grid"), showLigand: false, showRaw: false, fullSpheres: false, view: "cartoon" };
       S.protId = index.levels.some((L) => L.id === arg) ? arg : index.levels[0].id;
       renderLeft();
       await openProtein(S.protId);
     },
+    async afterTour() { await intro(false); if (S) S.started = true; },
+    tour: () => [
+      { sel: "#algo-intro", title: "How the methods work", text: "A short illustrated intro to the grid and alpha-sphere methods. It opens by itself the first time." },
+      { sel: "#algo-prot", title: "Same ten proteins", text: "The proteins from Chapter 1. Pick one to run the methods on." },
+      { sel: "#algo-method", title: "Two methods", text: "<b>Grid</b> (LIGSITE-like) or <b>Alpha spheres</b> (fpocket-like)." },
+      { sel: "#algo-params", title: "Turn the knobs", text: "Every slider re-runs the method instantly. The grey line under each says what it does." },
+      { sel: "#algo-score", title: "Ranking", text: "Which property decides pocket #1." },
+      { sel: "#algo-show", title: "Check yourself", text: "<b>True ligand</b> shows where the drug really binds." },
+      { sel: "#right table", title: "The ranking", text: "Pockets by rank, with their distance to the true ligand (DCC). A ✓ marks the correct one." },
+      { sel: "#algo-tasks", title: "Challenges", text: "Seven questions. They tick themselves when you reach the right setting, and then show the explanation." },
+    ],
     leave() { S = null; },
     recentre() { if (S) { S.viewer.zoomTo(); S.viewer.render(); } },
   });
