@@ -188,6 +188,7 @@ window.PW = (function () {
       document.body.appendChild(root);
       const spot = $(".spot", root), tip = $(".tip", root);
       const scrolled = ["#left", "#right", "#menu"].map((q) => [$(q), $(q) && $(q).scrollTop]);
+      const winY = window.scrollY; // on phones the page itself scrolls
       let i = 0;
       function place() {
         const st = steps[i], t = st.sel && $(st.sel);
@@ -222,6 +223,7 @@ window.PW = (function () {
         window.removeEventListener("resize", place); document.removeEventListener("keydown", key, true);
         root.remove();
         scrolled.forEach(([e, top]) => { if (e) e.scrollTop = top; });
+        window.scrollTo(0, winY);
         resolve();
       }
       const go = (d) => { i += d; if (i >= steps.length) end(); else place(); };
@@ -354,7 +356,7 @@ window.PW = (function () {
   // The game-screen tour: the general controls once (first chapter opened), then each chapter's own
   // steps the first time that chapter is opened. force: replay everything (the "Tour" button).
   const GAME_TOUR = [
-    { title: "A quick tour", text: "Thirty seconds on the controls. <kbd>→</kbd> or <b>Next</b> to continue, <kbd>Esc</kbd> to skip. You can replay it any time with the <b>Tour</b> button at the top." },
+    { title: "A quick tour", text: "A short tour of the controls. <kbd>→</kbd> or <b>Next</b> to continue, <kbd>Esc</kbd> to skip. You can replay it any time with the <b>Tour</b> button at the top." },
     { sel: "#btn-home", title: "Back to the chapters", text: "Returns to the chapter menu. Your progress is kept." },
     { sel: "#hud-title", title: "Where you are", text: "The chapter and the current protein or level." },
     { sel: "#stage", title: "The 3D view", text: "<b>Drag</b> to rotate, <b>scroll</b> or pinch to zoom, <b>right-drag</b> (or <kbd>Ctrl</kbd>+drag) to move sideways." },

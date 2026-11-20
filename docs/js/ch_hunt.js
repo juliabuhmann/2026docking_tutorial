@@ -5,6 +5,10 @@
 
   // Feedback distances (A from the clicked atom to the nearest ligand atom). Feel only.
   const HOT_A = 8, WARM_A = 15;
+  // A click solves the level only on an atom that faces the ligand: a pocket-lining residue's far
+  // side can be 10-12 A away, on the outer surface, which would bypass slicing into buried pockets.
+  // 6 A ~ the 4.5 A pocket-residue cutoff plus about one bond.
+  const POCKET_CLICK_MAX_A = 6;
   const COLD = "#e8edf7"; // not blue: the protein is
   // Surface view: how far beyond the van der Waals radius a click still counts as on an atom. About
   // the solvent probe radius (1.4 A), which is how far the molecular surface can sit from the atoms.
@@ -99,7 +103,8 @@
     if (S.mode === "surface") {
       // once the answer is shown: pocket-lining residues gold, surface see-through so the ligand shows
       const cf = (a) => (shown && S.pocketKeys.has(`${a.chain}:${a.resi}`) ? "#ffd166" : colorOf(a.chain));
-      const op = shown ? 0.62 : 1;
+      // see-through when there is something inside to show; buried hint dots sit behind two layers
+      const op = S.hintPockets && !shown ? 0.4 : shown ? 0.62 : 1;
       if (!S.surf) S.surf = PW.surface(v, m, cf, op);
       else S.surf.restyle(cf, op);
     } else if (S.surf) { S.surf.remove(); S.surf = null; }
@@ -137,8 +142,7 @@
     if (S.hintPockets) {
       S.hintPockets.forEach((pk, i) => {
         const col = ["#ffd166", "#5eead4", "#b69cff"][i];
-        pk.points.forEach((q, j) => { if (j % 2 === 0) S.viewer.addSphere({ center: vec(q), radius: 0.35, color: col, opacity: 0.8 }); });
-        S.viewer.addLabel(`#${i + 1}`, { position: vec(pk.centre), fontSize: 13, fontColor: "#06131c", backgroundColor: col, backgroundOpacity: 0.95, inFront: true });
+        S.viewer.addLabel(`#${i + 1}`, { position: vec(pk.centre), fontSize: 13, fontColor: "#06131c", backgroundColor: col, backgroundOpacity: 0.95 });
       });
     }
     S.viewer.render();
@@ -163,13 +167,13 @@
     const reachable = S.hintLevel >= 3 ? 1 : tries === 0 ? 3 : tries + 1 <= 3 ? 2 : 1; // same rule as onPick
     let html = `<h3>Level ${S.i + 1} of ${S.index.levels.length}</h3>
       <div class="big" style="font-size:22px">${esc(L.title)}</div>
-      <p class="small muted"><span class="diff ${L.difficulty}">${L.difficulty}</span> &nbsp;PDB <a href="https://www.rcsb.org/structure/${L.pdb_id}" target="_blank" rel="noopener">${L.pdb_id}</a> · ${L.chains.length > 1 ? `${L.chains.length} chains` : "1 chain"} · ${L.resolution ? `${L.resolution} Å` : ""}</p>
+      <p class="small muted"><span class="diff ${L.difficulty}">${L.difficulty}</span> &nbsp;PDB <a href="https://www.rcsb.org/structure/${L.pdb_id}" target="_blank" rel="noopener">${L.pdb_id}</a> · ${L.chains.length > 1 ? `${L.chains.length} chains` : "1 chain"} · ${L.resolution ? `${(+L.resolution).toFixed(1)} Å` : ""}</p>
       ${L.intro && L.intro.length ? `<button id="hunt-about" class="ghost small"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" style="vertical-align:-2px;margin-right:5px"><circle cx="8" cy="8" r="6.6"/><path d="M8 7v4.4" stroke-linecap="round"/><circle cx="8" cy="4.6" r=".9" fill="currentColor" stroke="none"/></svg>About this protein</button>` : ""}`;
     if (!S.solved && !S.revealed) {
       html += `<div class="box acc"><b>Task:</b> click on the protein where ${esc(L.ligand_label)} binds.
         <div class="small muted" style="margin-top:4px">Tries so far: <b>${tries}</b>. ${tries === 0 ? "Solve on the first try for" : "Solve with the next click for"} ${stars(reachable)}${S.hintLevel >= 3 ? " (capped by the hint)" : ""}.</div></div>
         <div id="hunt-log"></div>
-        <div class="row"><button id="hunt-hint">Hint ${S.hintLevel + 1 <= 3 ? `(${S.hintLevel + 1}/3)` : ""}</button><button id="hunt-reveal" class="ghost">Show me</button></div>
+        <div class="row"><button id="hunt-hint" ${S.hintLevel >= 3 ? "disabled" : ""}>${S.hintLevel >= 3 ? "No more hints" : `Hint (${S.hintLevel + 1}/3)`}</button><button id="hunt-reveal" class="ghost">Show me</button></div>
         <div id="hunt-hints"></div>`;
     } else {
       const s = PW.progress.stars[`hunt:${L.id}`];
@@ -215,7 +219,9 @@
     if (S.hintLevel === 3) {
       const res = Pockets.gridPockets(S.atoms, Pockets.GRID_DEFAULTS);
       S.hintPockets = res.pockets.slice(0, 3);
-      drawProbes();
+      // opaque pseudo-atoms: semi-transparent shapes do not render behind the see-through surface
+      S.hintPockets.forEach((pk, i) => PW.dots(S.viewer, pk.points.filter((_, j) => j % 2 === 0), ["#ffd166", "#5eead4", "#b69cff"][i], 0.5));
+      drawProbes(); styleProtein(); // the surface turns see-through so the dots show
     }
     renderRight();
   }
@@ -230,7 +236,9 @@
     const mark = p.map((x, k) => x + toViewer[k] * lift);
     const chain = S.atoms.chain[i], resi = S.atoms.resi[i], resn = S.atoms.resn[i];
     const d = Math.min(...S.ligXyz.map((l) => Pockets.dist(l, p)));
-    const hit = S.sites.findIndex((st) => st.residues.some((r) => r.chain === chain && r.resi === resi));
+    const lines = (st) => st.residues.some((r) => r.chain === chain && r.resi === resi);
+    const hit = S.sites.findIndex((st) => lines(st) && Math.min(...st.xyz.map((l) => Pockets.dist(l, p))) <= POCKET_CLICK_MAX_A);
+    const backside = hit < 0 && S.sites.some(lines);
     S.tries++;
     const inPocket = hit >= 0;
     if (inPocket) S.foundSite = hit;
@@ -248,8 +256,11 @@
       return;
     }
     let color, html;
-    if (decoy) {
-      color = "#ffb454";
+    if (backside) {
+      color = "#ff8f8f";
+      html = `<b>${where}</b>: hot! This residue lines the pocket, but you clicked its far side, ${d.toFixed(0)} Å from the ligand. The pocket is on the other side${S.level.difficulty === "hard" ? ": try slicing in" : ""}.`;
+    } else if (decoy) {
+      color = "#c084fc";
       html = `<b>${where}</b>: you found ${esc(decoy.name)}. ${esc(decoy.feedback)}`;
     } else if (d <= HOT_A) {
       color = "#ff8f8f"; html = `<b>${where}</b>: hot! The ligand is ${d.toFixed(0)} Å away.`;
@@ -261,6 +272,7 @@
     S.probes.push({ xyz: mark, color, ok: false });
     S.log.push({ html, color });
     drawProbes(); renderRight();
+    toast(html, "", 3500); // the log in the right panel can be far below the viewer on a phone
   }
 
   function reveal() {
@@ -276,6 +288,10 @@
       S.mode = "surface";
       PW.$$("#hunt-views button").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.v === "surface")));
     }
+    // undo the slice: the answer should not hide behind the cut
+    S.slice = 0;
+    const sl = document.querySelector("#hunt-slice .slider");
+    if (sl && sl.set) sl.set(0);
     drawLigand(); styleProtein(); renderRight();
     // the site that was clicked (an assembly has several equivalent ones), else the reference site
     const site = S.sites[S.foundSite || 0];
@@ -375,7 +391,7 @@
     if (!L.intro || !L.intro.length || (!force && PW.seen(key))) return Promise.resolve();
     PW.markSeen(key);
     const n = L.intro.length;
-    const facts = `<div class="facts">${esc(L.ligand_name)} · ${L.n_ligand_atoms} heavy atoms · PDB ${esc(L.pdb_id)}</div>`;
+    const facts = `<div class="facts">${esc(L.ligand_label)} (PDB ligand code ${esc(L.ligand_id)}) · ${L.n_ligand_atoms} heavy atoms · PDB ${esc(L.pdb_id)}</div>`;
     return PW.cards(L.intro.map((c, j) => ({
       kicker: `Level ${S.i + 1} · ${esc(L.title)} · ${j + 1}/${n}`,
       title: c.title, html: c.text + (c.title === "The ligand" ? facts : ""),
@@ -393,7 +409,7 @@
     async enter(arg) {
       const index = await PW.get("index", "index");
       let i = Math.max(0, Math.min(index.levels.length - 1, (parseInt(arg, 10) || 1) - 1));
-      if (!unlocked(index, i)) i = 0;
+      if (!unlocked(index, i)) { toast(`Level ${i + 1} is still locked: solve the ones before it first.`, "warn"); i = 0; }
       await openLevel(index, i, true);
     },
     afterTour() { if (S) return intro(false); },

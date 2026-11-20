@@ -70,7 +70,7 @@
   window.addEventListener("DOMContentLoaded", () => {
     $("#btn-unlock").addEventListener("click", () => { PW.progress.unlockAll = true; PW.save(); PW.toast("All levels unlocked.", "good"); render(); });
     $("#btn-reset").addEventListener("click", async () => {
-      const ok = await PW.modal("<h2>Reset progress?</h2><p>Stars and completed tasks in this browser are deleted.</p>",
+      const ok = await PW.modal("<h2>Reset progress?</h2><p>Stars, completed tasks and revealed levels in this browser are deleted, and the tours and intro cards will show again.</p>",
         [{ label: "Cancel", value: false }, { label: "Reset", primary: true, value: true }]);
       if (ok) { PW.resetProgress(); render(); }
     });
